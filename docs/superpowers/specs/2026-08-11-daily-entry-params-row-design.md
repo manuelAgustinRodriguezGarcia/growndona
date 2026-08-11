@@ -2,12 +2,14 @@
 
 ## Goal
 
-Put the five measurement inputs in `DailyEntryForm` on one horizontal row with short labels and narrow fields. No default value prefill.
+Flatten `DailyEntryForm` sections (no nested card containers) and put the five measurement inputs on one horizontal row with short labels and narrow fields. No default value prefill.
 
 ## Scope
 
 In scope:
 
+- Remove card chrome from DailyEntryForm section wrappers: no background, border, border-radius, or padding on those blocks
+- Form (`form.form`) is the only layout parent; sections stack with the form gap
 - Compact labels: `Temp.`, `Hum.`, `pH`, `EC (µS/cm)`, `PPM`
 - Single-row layout with fixed narrow widths
 - Horizontal scroll on small screens when the row overflows
@@ -17,11 +19,20 @@ Out of scope:
 
 - Prefilling demo values
 - Changing save/query logic beyond EC range validation
-- Redesigning other form sections
+- Changing `.block` card styling on other forms (Profile, Cultivation, Problems, etc.)
 
-## UI
+## UI — form sections
 
-`paramsGrid` becomes a horizontal flex/grid row:
+In `DailyEntryForm` only:
+
+- Stop using shared card-styled `formStyles.block` for section wrappers, or override with a local unstyled section class
+- Keep section titles (`Parámetros`, `Acciones del día`, `Fotos`, `Notas`)
+- Spacing between sections comes from `.form { gap }` (and small internal gaps for fields), not from padded bordered boxes
+- Date row, params, actions, photos, notes, and save bar sit directly in the form flow
+
+## UI — params row
+
+`paramsGrid` becomes a horizontal flex row:
 
 | Field | Label | Approx width |
 |-------|-------|--------------|
@@ -44,13 +55,15 @@ Out of scope:
 
 ## Files
 
-- `src/components/entries/DailyEntryForm.module.scss` — row layout
-- `src/components/entries/DailyEntryForm.tsx` — short label usage; EC range
+- `src/components/entries/DailyEntryForm.module.scss` — row layout + unstyled sections
+- `src/components/entries/DailyEntryForm.tsx` — short labels; EC range; section class usage
 - `src/lib/utils/labels.ts` — short labels + EC unit/decimals
 
 ## Acceptance
 
-1. All five inputs render on one row on desktop and mobile (scroll if needed).
-2. Labels match the compact set above.
-3. Empty form still starts blank; existing measurements still load when editing.
-4. EC accepts values like 534 without failing validation.
+1. DailyEntryForm sections have no border, padding box, or surface card around them; the form is the visual container.
+2. Other forms that use `form.module.scss` `.block` keep their current card look.
+3. All five inputs render on one row on desktop and mobile (scroll if needed).
+4. Labels match the compact set above.
+5. Empty form still starts blank; existing measurements still load when editing.
+6. EC accepts values like 534 without failing validation.
