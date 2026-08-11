@@ -1,0 +1,43 @@
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.titles {
+  min-width: 0;
+}
+
+.backRow {
+  margin-bottom: 6px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-weight: 500;
+
+  &:hover {
+    color: var(--text);
+  }
+}
+
+.title {
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.action {
+  flex-shrink: 0;
+}

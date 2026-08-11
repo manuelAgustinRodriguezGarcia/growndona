@@ -1,0 +1,94 @@
+import type {
+  ActionType,
+  CultivationPeriod,
+  PeriodType,
+} from "@/types/database";
+
+export const PERIOD_OPTIONS: { value: PeriodType; label: string }[] = [
+  { value: "germination", label: "Germinación" },
+  { value: "seedling", label: "Plántula" },
+  { value: "vegetative", label: "Crecimiento" },
+  { value: "flowering", label: "Floración" },
+  { value: "drying", label: "Secado" },
+  { value: "finished", label: "Finalizado" },
+  { value: "custom", label: "Personalizado" },
+];
+
+export function periodTypeLabel(type: PeriodType): string {
+  return PERIOD_OPTIONS.find((p) => p.value === type)?.label ?? type;
+}
+
+export function periodLabel(period: Pick<CultivationPeriod, "type" | "name">): string {
+  if (period.type === "custom") return period.name;
+  return periodTypeLabel(period.type);
+}
+
+export function currentPeriod(
+  periods: CultivationPeriod[]
+): CultivationPeriod | null {
+  const open = periods
+    .filter((p) => !p.end_date)
+    .sort((a, b) => b.start_date.localeCompare(a.start_date));
+  if (open.length > 0) return open[0];
+  return null;
+}
+
+export function sortedPeriods(periods: CultivationPeriod[]): CultivationPeriod[] {
+  return [...periods].sort((a, b) => a.start_date.localeCompare(b.start_date));
+}
+
+export function periodForDate(
+  periods: CultivationPeriod[],
+  date: string
+): CultivationPeriod | null {
+  const candidates = sortedPeriods(periods).filter(
+    (p) => p.start_date <= date && (!p.end_date || p.end_date >= date)
+  );
+  return candidates.length > 0 ? candidates[candidates.length - 1] : null;
+}
+
+export const ACTION_OPTIONS: { value: ActionType; label: string }[] = [
+  { value: "pruning", label: "Poda" },
+  { value: "defoliation", label: "Defoliación" },
+  { value: "transplant", label: "Trasplante" },
+  { value: "training", label: "Entrenamiento" },
+  { value: "solution_change", label: "Cambio de solución" },
+  { value: "cleaning", label: "Limpieza" },
+  { value: "other", label: "Otra" },
+];
+
+export function actionLabel(type: ActionType): string {
+  return ACTION_OPTIONS.find((a) => a.value === type)?.label ?? type;
+}
+
+export const METHOD_OPTIONS = ["Tierra", "Coco", "DWC", "RDWC", "Hidroponía", "Otro"];
+
+export const ENVIRONMENT_OPTIONS = ["Interior", "Exterior", "Invernadero", "Otro"];
+
+export type MeasurementKey = "temperature" | "humidity" | "ph" | "ec" | "ppm";
+
+export const MEASUREMENT_FIELDS: {
+  key: MeasurementKey;
+  label: string;
+  unit: string;
+  decimals: number;
+}[] = [
+  { key: "temperature", label: "Temperatura", unit: "°C", decimals: 1 },
+  { key: "humidity", label: "Humedad", unit: "%", decimals: 0 },
+  { key: "ph", label: "pH", unit: "", decimals: 1 },
+  { key: "ec", label: "EC", unit: "", decimals: 2 },
+  { key: "ppm", label: "PPM", unit: "", decimals: 0 },
+];
+
+export function formatMeasurement(
+  key: MeasurementKey,
+  value: number | null | undefined
+): string {
+  if (value === null || value === undefined) return "—";
+  const field = MEASUREMENT_FIELDS.find((f) => f.key === key)!;
+  const num = Number(value);
+  const text = Number.isInteger(num)
+    ? String(num)
+    : num.toFixed(field.decimals);
+  return field.unit ? `${text} ${field.unit}` : text;
+}

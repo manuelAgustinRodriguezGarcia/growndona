@@ -1,0 +1,102 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.greeting {
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.switcher {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.switchChip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+
+  &:hover {
+    color: var(--text);
+  }
+}
+
+.switchActive {
+  background: var(--green-soft);
+  border-color: rgba(63, 143, 71, 0.4);
+  color: var(--green-light);
+}
+
+.activity {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.activityRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+
+  svg {
+    color: var(--green-light);
+    flex-shrink: 0;
+  }
+}
+
+.activityLabel {
+  color: var(--text-muted);
+}
+
+.activityValue {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.problemsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.problemCount {
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.headerLink {
+  display: block;
+  border-radius: var(--radius);
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.92;
+  }
+}
