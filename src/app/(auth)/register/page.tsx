@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Field";
+import { Input, PasswordInput } from "@/components/ui/Field";
 import styles from "../form.module.scss";
 
 function translateError(message: string): string {
@@ -18,9 +18,12 @@ function translateError(message: string): string {
   return "No se pudo crear la cuenta. Intentá de nuevo.";
 }
 
+const USERNAME_REGEX = /^[a-z0-9_]{3,20}$/;
+
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -33,6 +36,14 @@ export default function RegisterPage() {
     if (loading) return;
     setError(null);
 
+    const cleanUsername = username.trim().toLowerCase();
+
+    if (!USERNAME_REGEX.test(cleanUsername)) {
+      setError(
+        "El nombre de usuario debe tener entre 3 y 20 caracteres, solo letras minúsculas, números y guión bajo."
+      );
+      return;
+    }
     if (password.length < 6) {
       setError("La contraseña debe tener al menos 6 caracteres.");
       return;
@@ -44,11 +55,22 @@ export default function RegisterPage() {
 
     setLoading(true);
     const supabase = createClient();
+
+    const { data: existingEmail } = await supabase.rpc(
+      "get_email_for_username",
+      { p_username: cleanUsername }
+    );
+    if (existingEmail) {
+      setError("Ese nombre de usuario ya está en uso.");
+      setLoading(false);
+      return;
+    }
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { name: name.trim() },
+        data: { name: name.trim(), username: cleanUsername },
         emailRedirectTo: `${window.location.origin}/auth/confirm`,
       },
     });
@@ -102,6 +124,15 @@ export default function RegisterPage() {
         required
       />
       <Input
+        label="Nombre de usuario"
+        type="text"
+        autoComplete="username"
+        placeholder="tu_usuario"
+        value={username}
+        onChange={(e) => setUsername(e.target.value.toLowerCase())}
+        required
+      />
+      <Input
         label="Email"
         type="email"
         autoComplete="email"
@@ -110,18 +141,16 @@ export default function RegisterPage() {
         onChange={(e) => setEmail(e.target.value)}
         required
       />
-      <Input
+      <PasswordInput
         label="Contraseña"
-        type="password"
         autoComplete="new-password"
         placeholder="Mínimo 6 caracteres"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
       />
-      <Input
+      <PasswordInput
         label="Repetir contraseña"
-        type="password"
         autoComplete="new-password"
         placeholder="Repetí la contraseña"
         value={confirmPassword}

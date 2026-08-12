@@ -54,6 +54,34 @@ textarea.control {
   line-height: 1.5;
 }
 
+.passwordWrapper {
+  position: relative;
+}
+
+.passwordControl {
+  padding-right: 46px;
+}
+
+.passwordToggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: var(--text);
+    background: var(--surface-3);
+  }
+}
+
 .error {
   border-color: rgba(192, 84, 74, 0.6);
 }

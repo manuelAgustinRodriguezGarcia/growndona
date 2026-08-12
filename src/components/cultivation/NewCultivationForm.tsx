@@ -11,17 +11,24 @@ import {
 import { buildCoverPath, uploadPhoto } from "@/lib/queries/photos";
 import { todayISO } from "@/lib/utils/dates";
 import {
-  ENVIRONMENT_OPTIONS,
-  METHOD_OPTIONS,
+  ENVIRONMENT_SELECT_OPTIONS,
+  METHOD_SELECT_OPTIONS,
   PERIOD_OPTIONS,
   periodTypeLabel,
 } from "@/lib/utils/labels";
 import type { PeriodType } from "@/types/database";
 import { Button } from "@/components/ui/Button";
-import { Input, Select, Textarea } from "@/components/ui/Field";
+import { Input, Textarea } from "@/components/ui/Field";
+import { Select } from "@/components/ui/Select";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { PhotoPicker } from "@/components/photos/PhotoPicker";
 import { useToast } from "@/components/ui/Toast";
 import styles from "@/styles/form.module.scss";
+
+const INITIAL_PERIOD_OPTIONS = [
+  { value: "", label: "Sin período" },
+  ...PERIOD_OPTIONS.filter((p) => p.value !== "finished" && p.value !== "custom"),
+];
 
 export function NewCultivationForm({ userId }: { userId: string }) {
   const router = useRouter();
@@ -125,11 +132,10 @@ export function NewCultivationForm({ userId }: { userId: string }) {
           required
         />
         <div className={styles.row}>
-          <Input
+          <DatePicker
             label="Fecha de inicio"
-            type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={setStartDate}
             required
           />
           <Input
@@ -145,18 +151,11 @@ export function NewCultivationForm({ userId }: { userId: string }) {
         <Select
           label="Período inicial"
           value={initialPeriod}
-          onChange={(e) => setInitialPeriod(e.target.value as PeriodType | "")}
+          onChange={(next) => setInitialPeriod(next as PeriodType | "")}
+          options={INITIAL_PERIOD_OPTIONS}
+          placeholder="Sin período"
           hint="Se crea automáticamente al guardar el cultivo."
-        >
-          <option value="">Sin período</option>
-          {PERIOD_OPTIONS.filter((p) => p.value !== "finished" && p.value !== "custom").map(
-            (p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            )
-          )}
-        </Select>
+        />
       </div>
 
       <div className={styles.block}>
@@ -171,27 +170,17 @@ export function NewCultivationForm({ userId }: { userId: string }) {
           <Select
             label="Método"
             value={method}
-            onChange={(e) => setMethod(e.target.value)}
-          >
-            <option value="">Sin especificar</option>
-            {METHOD_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
+            onChange={setMethod}
+            options={METHOD_SELECT_OPTIONS}
+            placeholder="Sin especificar"
+          />
           <Select
             label="Ambiente"
             value={environment}
-            onChange={(e) => setEnvironment(e.target.value)}
-          >
-            <option value="">Sin especificar</option>
-            {ENVIRONMENT_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
+            onChange={setEnvironment}
+            options={ENVIRONMENT_SELECT_OPTIONS}
+            placeholder="Sin especificar"
+          />
         </div>
         {method === "Otro" && (
           <Input

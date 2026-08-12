@@ -9,11 +9,22 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  ),
   title: {
     default: "Growndona",
     template: "%s · Growndona",
   },
   description: "Seguimiento organizado de cultivos: parámetros, riegos, fotos y más.",
+  openGraph: {
+    title: "Growndona",
+    description:
+      "Seguimiento organizado de cultivos: parámetros, riegos, fotos y más.",
+    siteName: "Growndona",
+    type: "website",
+    locale: "es_AR",
+  },
 };
 
 export const viewport: Viewport = {

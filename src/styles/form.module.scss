@@ -1,14 +1,10 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
 .block {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 14px;

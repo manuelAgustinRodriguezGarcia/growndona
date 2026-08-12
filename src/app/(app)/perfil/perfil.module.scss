@@ -1,7 +1,17 @@
 .page {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 16px;
+
+  > header {
+    margin-bottom: 0;
+  }
+}
+
+.logoutArea {
+  margin-top: auto;
+  padding-top: 16px;
 }
 
 .stats {

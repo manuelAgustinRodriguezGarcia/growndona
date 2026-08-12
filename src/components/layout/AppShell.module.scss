@@ -3,7 +3,11 @@
 }
 
 .main {
-  padding: 16px 16px calc(var(--bottom-nav-height) + 28px);
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: calc(var(--top-nav-height) + env(safe-area-inset-top) + 16px) 16px
+    calc(var(--bottom-nav-height) + 28px);
 
   @media (min-width: 768px) {
     margin-left: var(--sidebar-width);
@@ -12,6 +16,10 @@
 }
 
 .inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
   max-width: 760px;
   margin: 0 auto;
 }

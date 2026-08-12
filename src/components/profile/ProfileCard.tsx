@@ -20,9 +20,31 @@ import { useToast } from "@/components/ui/Toast";
 import formStyles from "@/styles/form.module.scss";
 import styles from "./ProfileCard.module.scss";
 
+export function LogoutButton() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogout() {
+    if (loading) return;
+    setLoading(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  return (
+    <Button variant="danger" full loading={loading} onClick={handleLogout}>
+      <LogOut size={18} aria-hidden="true" />
+      Cerrar sesión
+    </Button>
+  );
+}
+
 type ProfileCardProps = {
   userId: string;
   name: string;
+  username: string | null;
   email: string;
   createdAt: string;
   avatarUrl: string | null;
@@ -32,6 +54,7 @@ type ProfileCardProps = {
 export function ProfileCard({
   userId,
   name,
+  username,
   email,
   createdAt,
   avatarUrl,
@@ -95,13 +118,6 @@ export function ProfileCard({
     }
   }
 
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
-
   return (
     <>
       <div className={styles.card}>
@@ -138,18 +154,12 @@ export function ProfileCard({
               <Pencil size={14} />
             </button>
           </div>
+          {username && <span className={styles.detail}>@{username}</span>}
           <span className={styles.detail}>{email}</span>
           <span className={styles.detail}>
             Miembro desde {formatDate(createdAt.slice(0, 10))}
           </span>
         </div>
-      </div>
-
-      <div>
-        <Button variant="danger" onClick={handleLogout}>
-          <LogOut size={16} aria-hidden="true" />
-          Cerrar sesión
-        </Button>
       </div>
 
       <input

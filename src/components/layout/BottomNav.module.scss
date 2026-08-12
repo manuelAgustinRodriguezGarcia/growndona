@@ -28,6 +28,7 @@
   font-size: 11px;
   font-weight: 500;
   transition: color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .active {
@@ -39,17 +40,25 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: var(--green);
-    color: #ffffff;
-    box-shadow: 0 2px 8px rgba(63, 143, 71, 0.3);
-    transition: background 0.15s ease;
+    background: #ffffff;
+    border: 1.5px solid var(--border-strong);
+    color: var(--green-light);
+    transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1),
+      background 0.16s ease, border-color 0.16s ease;
   }
 
-  &:active span:first-child,
-  &:hover span:first-child {
-    background: var(--green-dark);
+  &:active span:first-child {
+    transform: scale(0.9);
+    background: var(--surface-2);
+    border-color: var(--green-light);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:active span:first-child {
+      transform: none;
+    }
   }
 }

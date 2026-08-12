@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile, getProfileStats } from "@/lib/queries/profile";
 import { getSignedUrl } from "@/lib/queries/photos";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { ProfileCard } from "@/components/profile/ProfileCard";
+import { LogoutButton, ProfileCard } from "@/components/profile/ProfileCard";
 import styles from "./perfil.module.scss";
 
 export const metadata: Metadata = { title: "Perfil" };
@@ -33,6 +33,7 @@ export default async function ProfilePage() {
       <ProfileCard
         userId={user.id}
         name={profile?.name ?? user.email ?? "Usuario"}
+        username={profile?.username ?? null}
         email={user.email ?? ""}
         createdAt={profile?.created_at ?? user.created_at}
         avatarUrl={avatarUrl}
@@ -64,6 +65,10 @@ export default async function ProfilePage() {
           </div>
         </div>
       </section>
+
+      <div className={styles.logoutArea}>
+        <LogoutButton />
+      </div>
     </div>
   );
 }

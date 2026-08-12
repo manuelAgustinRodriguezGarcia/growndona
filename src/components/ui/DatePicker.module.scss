@@ -33,6 +33,11 @@
   box-shadow: var(--shadow);
 }
 
+.above {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
 .monthBar {
   display: flex;
   align-items: center;

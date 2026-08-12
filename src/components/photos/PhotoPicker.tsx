@@ -71,18 +71,18 @@ export function PhotoPicker({
             </button>
           </div>
         ))}
-        {(multiple || files.length === 0) && (
-          <button
-            type="button"
-            className={styles.add}
-            onClick={() => inputRef.current?.click()}
-            disabled={disabled}
-          >
-            <ImagePlus size={20} aria-hidden="true" />
-            {label}
-          </button>
-        )}
       </div>
+      {(multiple || files.length === 0) && (
+        <button
+          type="button"
+          className={styles.add}
+          onClick={() => inputRef.current?.click()}
+          disabled={disabled}
+        >
+          <ImagePlus size={20} aria-hidden="true" />
+          {label}
+        </button>
+      )}
       <input
         ref={inputRef}
         type="file"

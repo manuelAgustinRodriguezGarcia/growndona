@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
+import { TopNav } from "./TopNav";
 import { BottomNav } from "./BottomNav";
 import styles from "./AppShell.module.scss";
 
@@ -12,6 +13,7 @@ type AppShellProps = {
 export function AppShell({ userName, userEmail, children }: AppShellProps) {
   return (
     <div className={styles.shell}>
+      <TopNav />
       <Sidebar userName={userName} userEmail={userEmail} />
       <main className={styles.main}>
         <div className={styles.inner}>{children}</div>

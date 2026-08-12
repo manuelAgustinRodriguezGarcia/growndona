@@ -9,10 +9,17 @@ import {
   removeStorageFiles,
   uploadPhoto,
 } from "@/lib/queries/photos";
-import { ENVIRONMENT_OPTIONS, METHOD_OPTIONS } from "@/lib/utils/labels";
+import {
+  ENVIRONMENT_OPTIONS,
+  ENVIRONMENT_SELECT_OPTIONS,
+  METHOD_OPTIONS,
+  METHOD_SELECT_OPTIONS,
+} from "@/lib/utils/labels";
 import type { Cultivation } from "@/types/database";
 import { Button } from "@/components/ui/Button";
-import { Input, Select, Textarea } from "@/components/ui/Field";
+import { Input, Textarea } from "@/components/ui/Field";
+import { Select } from "@/components/ui/Select";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { PhotoPicker } from "@/components/photos/PhotoPicker";
 import { useToast } from "@/components/ui/Toast";
 import styles from "@/styles/form.module.scss";
@@ -132,11 +139,10 @@ export function EditCultivationForm({
           required
         />
         <div className={styles.row}>
-          <Input
+          <DatePicker
             label="Fecha de inicio"
-            type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={setStartDate}
             required
           />
           <Input
@@ -162,27 +168,17 @@ export function EditCultivationForm({
           <Select
             label="Método"
             value={method}
-            onChange={(e) => setMethod(e.target.value)}
-          >
-            <option value="">Sin especificar</option>
-            {METHOD_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
+            onChange={setMethod}
+            options={METHOD_SELECT_OPTIONS}
+            placeholder="Sin especificar"
+          />
           <Select
             label="Ambiente"
             value={environment}
-            onChange={(e) => setEnvironment(e.target.value)}
-          >
-            <option value="">Sin especificar</option>
-            {ENVIRONMENT_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
+            onChange={setEnvironment}
+            options={ENVIRONMENT_SELECT_OPTIONS}
+            placeholder="Sin especificar"
+          />
         </div>
         {method === "Otro" && (
           <Input

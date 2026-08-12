@@ -1,7 +1,7 @@
 import {
   History,
   Home,
-  PlusCircle,
+  NotebookTabs,
   Sprout,
   User,
   type LucideIcon,
@@ -22,7 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/registrar",
     label: "Registrar",
     shortLabel: "Registrar",
-    icon: PlusCircle,
+    icon: NotebookTabs,
     highlight: true,
   },
   { href: "/historial", label: "Historial", shortLabel: "Historial", icon: History },

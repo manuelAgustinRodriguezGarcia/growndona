@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Field";
+import { Input, PasswordInput } from "@/components/ui/Field";
+import { InstallAppButton } from "@/components/pwa/InstallAppButton";
 import styles from "../form.module.scss";
 
 function translateError(message: string): string {
   if (message.includes("Invalid login credentials")) {
-    return "Email o contraseña incorrectos.";
+    return "Usuario o contraseña incorrectos.";
   }
   if (message.includes("Email not confirmed")) {
     return "Tenés que confirmar tu email antes de iniciar sesión.";
@@ -20,7 +21,7 @@ function translateError(message: string): string {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -32,6 +33,21 @@ export default function LoginPage() {
     setLoading(true);
 
     const supabase = createClient();
+    let email = identifier.trim();
+
+    if (!email.includes("@")) {
+      const { data: resolvedEmail, error: rpcError } = await supabase.rpc(
+        "get_email_for_username",
+        { p_username: email }
+      );
+      if (rpcError || !resolvedEmail) {
+        setError("Usuario o contraseña incorrectos.");
+        setLoading(false);
+        return;
+      }
+      email = resolvedEmail;
+    }
+
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -49,24 +65,22 @@ export default function LoginPage() {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <h1 className={styles.title}>Iniciar sesión</h1>
       {error && (
         <p className={styles.error} role="alert">
           {error}
         </p>
       )}
       <Input
-        label="Email"
-        type="email"
-        autoComplete="email"
-        placeholder="tu@email.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        label="Email o nombre de usuario"
+        type="text"
+        autoComplete="username"
+        placeholder="Ingresá tu email o usuario"
+        value={identifier}
+        onChange={(e) => setIdentifier(e.target.value)}
         required
       />
-      <Input
+      <PasswordInput
         label="Contraseña"
-        type="password"
         autoComplete="current-password"
         placeholder="••••••••"
         value={password}
@@ -77,8 +91,12 @@ export default function LoginPage() {
         Entrar
       </Button>
       <p className={styles.switch}>
+        <Link href="/recuperar">¿Olvidaste tu contraseña?</Link>
+      </p>
+      <p className={styles.switch}>
         ¿No tenés cuenta? <Link href="/register">Registrate</Link>
       </p>
+      <InstallAppButton />
     </form>
   );
 }

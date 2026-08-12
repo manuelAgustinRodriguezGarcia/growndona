@@ -33,6 +33,8 @@ type DatePickerProps = {
 
 const WEEKDAYS = ["lu", "ma", "mi", "ju", "vi", "sá", "do"];
 
+const POPOVER_HEIGHT = 340;
+
 function parseLocalDate(iso: string): Date {
   const [year, month, day] = iso.split("-").map(Number);
   return new Date(year, month - 1, day);
@@ -49,13 +51,17 @@ export function DatePicker({
 }: DatePickerProps) {
   const autoId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
+  const [above, setAbove] = useState(false);
   const selected = parseLocalDate(value);
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(selected));
+  const [syncedValue, setSyncedValue] = useState(value);
 
-  useEffect(() => {
-    setViewMonth(startOfMonth(parseLocalDate(value)));
-  }, [value]);
+  if (value !== syncedValue) {
+    setSyncedValue(value);
+    setViewMonth(startOfMonth(selected));
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -98,6 +104,17 @@ export function DatePicker({
     setOpen(false);
   }
 
+  function toggle() {
+    if (!open) {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (rect) {
+        const spaceBelow = window.innerHeight - rect.bottom;
+        setAbove(spaceBelow < POPOVER_HEIGHT && rect.top > spaceBelow);
+      }
+    }
+    setOpen((v) => !v);
+  }
+
   const accessibleName = ariaLabel ?? label ?? "Fecha";
 
   return (
@@ -114,18 +131,23 @@ export function DatePicker({
       )}
       <button
         id={autoId}
+        ref={triggerRef}
         type="button"
         className={`${fieldStyles.control} ${styles.trigger}`}
         aria-label={label ? undefined : accessibleName}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         <span>{format(selected, "d 'de' MMMM yyyy", { locale: es })}</span>
         <Calendar size={18} aria-hidden="true" />
       </button>
       {open && (
-        <div className={styles.popover} role="dialog" aria-label={accessibleName}>
+        <div
+          className={`${styles.popover} ${above ? styles.above : ""}`}
+          role="dialog"
+          aria-label={accessibleName}
+        >
           <div className={styles.monthBar}>
             <button
               type="button"

@@ -20,6 +20,7 @@ export type ProblemStatus = "active" | "resolved";
 export type Profile = {
   id: string;
   name: string;
+  username: string | null;
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
@@ -253,7 +254,12 @@ export type Database = {
       >;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_email_for_username: {
+        Args: { p_username: string };
+        Returns: string | null;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

@@ -10,7 +10,8 @@ import {
 } from "@/lib/queries/cultivations";
 import { todayISO } from "@/lib/utils/dates";
 import { Button } from "@/components/ui/Button";
-import { Input, Textarea } from "@/components/ui/Field";
+import { Textarea } from "@/components/ui/Field";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import styles from "@/styles/form.module.scss";
@@ -114,11 +115,10 @@ export function CultivationDangerZone({
               {error}
             </p>
           )}
-          <Input
+          <DatePicker
             label="Fecha final"
-            type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={setEndDate}
             required
           />
           <Textarea

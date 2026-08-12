@@ -8,6 +8,7 @@ import { buildProblemPhotoPath, uploadPhoto } from "@/lib/queries/photos";
 import { todayISO } from "@/lib/utils/dates";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Field";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { PhotoPicker } from "@/components/photos/PhotoPicker";
 import { useToast } from "@/components/ui/Toast";
 import styles from "@/styles/form.module.scss";
@@ -88,11 +89,10 @@ export function ProblemForm({ cultivationId, userId }: ProblemFormProps) {
           onChange={(e) => setTitle(e.target.value)}
           required
         />
-        <Input
+        <DatePicker
           label="Fecha de detección"
-          type="date"
           value={detectedAt}
-          onChange={(e) => setDetectedAt(e.target.value)}
+          onChange={setDetectedAt}
           required
         />
         <Textarea

@@ -131,14 +131,6 @@ export default async function CultivationPage({ params, searchParams }: PageProp
           <ChevronLeft size={16} aria-hidden="true" />
           Mis cultivos
         </Link>
-        {isActive && (
-          <Link href={`/cultivos/${id}/registrar`}>
-            <Button size="small">
-              <Plus size={15} aria-hidden="true" />
-              Registrar
-            </Button>
-          </Link>
-        )}
       </div>
 
       <CultivationHeader cultivation={cultivation} coverUrl={coverUrl} />

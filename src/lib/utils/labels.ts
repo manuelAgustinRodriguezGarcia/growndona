@@ -65,6 +65,18 @@ export const METHOD_OPTIONS = ["Tierra", "Coco", "DWC", "RDWC", "Hidroponía", "
 
 export const ENVIRONMENT_OPTIONS = ["Interior", "Exterior", "Invernadero", "Otro"];
 
+const UNSPECIFIED = { value: "", label: "Sin especificar" };
+
+export const METHOD_SELECT_OPTIONS = [
+  UNSPECIFIED,
+  ...METHOD_OPTIONS.map((option) => ({ value: option, label: option })),
+];
+
+export const ENVIRONMENT_SELECT_OPTIONS = [
+  UNSPECIFIED,
+  ...ENVIRONMENT_OPTIONS.map((option) => ({ value: option, label: option })),
+];
+
 export type MeasurementKey = "temperature" | "humidity" | "ph" | "ec" | "ppm";
 
 export const MEASUREMENT_FIELDS: {
@@ -81,15 +93,22 @@ export const MEASUREMENT_FIELDS: {
   { key: "ppm", label: "PPM", shortLabel: "PPM", unit: "", decimals: 0 },
 ];
 
-export function formatMeasurement(
+export function formatMeasurementValue(
   key: MeasurementKey,
   value: number | null | undefined
 ): string {
   if (value === null || value === undefined) return "—";
   const field = MEASUREMENT_FIELDS.find((f) => f.key === key)!;
   const num = Number(value);
-  const text = Number.isInteger(num)
-    ? String(num)
-    : num.toFixed(field.decimals);
+  return Number.isInteger(num) ? String(num) : num.toFixed(field.decimals);
+}
+
+export function formatMeasurement(
+  key: MeasurementKey,
+  value: number | null | undefined
+): string {
+  const text = formatMeasurementValue(key, value);
+  if (text === "—") return text;
+  const field = MEASUREMENT_FIELDS.find((f) => f.key === key)!;
   return field.unit ? `${text} ${field.unit}` : text;
 }

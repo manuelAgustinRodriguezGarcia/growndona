@@ -1,17 +1,33 @@
 .page {
+  position: relative;
   min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
+  background: var(--green-deep);
+  overflow: hidden;
+}
+
+.background {
+  position: absolute;
+  inset: -16px;
+  z-index: 0;
+  background-image: url("/background.png");
+  background-size: cover;
+  background-position: center;
+  filter: blur(8px);
 }
 
 .card {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 400px;
-  background: var(--surface);
+  background: #fefefe;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  overflow: hidden;
   padding: 28px 22px;
 
   @media (min-width: 768px) {
@@ -19,27 +35,54 @@
   }
 }
 
+.developedBy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 26px -22px -28px;
+  padding: 11px 16px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.92;
+  }
+
+  @media (min-width: 768px) {
+    margin: 30px -32px -36px;
+  }
+}
+
+.developedByLogo {
+  display: block;
+  flex-shrink: 0;
+}
+
 .brand {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 2px;
   margin-bottom: 26px;
 }
 
 .logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--green-soft);
-  color: var(--green-light);
+  display: block;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
 }
 
 .name {
-  font-size: 21px;
+  color: var(--green-deep);
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  white-space: nowrap;
 }

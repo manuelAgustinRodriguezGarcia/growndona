@@ -1,0 +1,69 @@
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: calc(var(--top-nav-height) + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 16px 0;
+  background: var(--green-deep);
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+}
+
+.logoLink {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.logo {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
+
+.name {
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: rgba(255, 255, 255, 0.9);
+  }
+}
+
+.creditLogo {
+  width: 38px;
+  height: 14px;
+  object-fit: contain;
+  opacity: 0.8;
+}

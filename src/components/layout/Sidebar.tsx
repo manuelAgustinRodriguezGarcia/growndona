@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Sprout } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { comfortaa } from "@/lib/fonts";
 import { NAV_ITEMS, isActivePath } from "./navItems";
 import styles from "./Sidebar.module.scss";
 
@@ -25,11 +27,19 @@ export function Sidebar({ userName, userEmail }: SidebarProps) {
 
   return (
     <aside className={styles.sidebar}>
-      <Link href="/dashboard" className={styles.brand}>
-        <span className={styles.logo}>
-          <Sprout size={22} aria-hidden="true" />
-        </span>
-        <span className={styles.name}>Growndona</span>
+      <Link
+        href="/dashboard"
+        className={`${styles.brand} ${comfortaa.className}`}
+      >
+        <Image
+          src="/logo-ligth.png"
+          alt=""
+          width={40}
+          height={40}
+          className={styles.logo}
+          priority
+        />
+        <span className={styles.name}>GROWNDONA</span>
       </Link>
       <nav className={styles.nav} aria-label="Navegación principal">
         {NAV_ITEMS.map((item) => {

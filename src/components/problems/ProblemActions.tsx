@@ -13,7 +13,8 @@ import { removeStorageFiles } from "@/lib/queries/photos";
 import { todayISO } from "@/lib/utils/dates";
 import type { ProblemWithPhotos } from "@/lib/queries/problems";
 import { Button } from "@/components/ui/Button";
-import { Input, Textarea } from "@/components/ui/Field";
+import { Textarea } from "@/components/ui/Field";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import styles from "@/styles/form.module.scss";
@@ -124,11 +125,10 @@ export function ProblemActions({ problem }: ProblemActionsProps) {
             onChange={(e) => setSolution(e.target.value)}
             required
           />
-          <Input
+          <DatePicker
             label="Fecha de resolución"
-            type="date"
             value={resolvedAt}
-            onChange={(e) => setResolvedAt(e.target.value)}
+            onChange={setResolvedAt}
             required
           />
           <div className={styles.actions}>

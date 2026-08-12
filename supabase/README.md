@@ -15,6 +15,7 @@ Abrir **SQL Editor** en el dashboard y ejecutar el contenido de cada archivo, en
 1. `migrations/0001_schema.sql` — tablas, foreign keys con cascade delete, índices, triggers (`updated_at` y creación automática de `profiles` al registrarse un usuario).
 2. `migrations/0002_rls.sql` — activa Row Level Security en todas las tablas y crea las policies. Un usuario solo puede leer/crear/modificar/eliminar datos de sus propios cultivos.
 3. `migrations/0003_storage.sql` — crea el bucket `cultivation-photos` (privado, 5 MB máximo, solo JPG/JPEG/PNG/WEBP) y sus policies de storage.
+4. `migrations/0004_username.sql` — agrega la columna `username` a `profiles` (único, minúsculas, 3-20 caracteres), asigna usernames a cuentas existentes a partir del email, y crea la función `get_email_for_username` que permite iniciar sesión con nombre de usuario.
 
 Si preferís usar la CLI de Supabase, los archivos también funcionan con `supabase db push` colocándolos en `supabase/migrations/`.
 
@@ -38,6 +39,7 @@ Las policies de storage solo permiten a cada usuario acceder a archivos cuya pri
 - La app usa email + contraseña (Supabase Auth).
 - En **Authentication → URL Configuration** configurar `Site URL` (por ejemplo `http://localhost:3000` en desarrollo).
 - Si la confirmación por email está activada (viene activada por defecto), el link de confirmación pasa por la ruta `/auth/confirm` de la app, que ya está implementada. Para desarrollo podés desactivar **Confirm email** en Authentication → Sign In / Providers → Email y así entrar directamente después de registrarte.
+- Recuperación de contraseña: la app pide el link desde `/recuperar` y define una nueva contraseña en `/nueva-contrasena`. El link del email también pasa por `/auth/confirm`, así que en **Authentication → URL Configuration → Redirect URLs** hay que permitir `http://localhost:3000/auth/confirm*` (y la URL de producción equivalente). Con el SMTP por defecto de Supabase hay un límite bajo de emails por hora.
 
 ## 5. Variables de entorno
 

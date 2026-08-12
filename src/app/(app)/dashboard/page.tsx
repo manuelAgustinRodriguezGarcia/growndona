@@ -113,11 +113,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       </section>
 
       <section>
-        <h2 className="section-title">Últimos parámetros</h2>
-        <MeasurementGrid latest={latestPerField(series)} />
-      </section>
-
-      <section className="card">
         <h2 className="section-title">Actividad</h2>
         <div className={styles.activity}>
           <div className={styles.activityRow}>
@@ -148,6 +143,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
       </section>
 
+      <section>
+        <h2 className="section-title">Últimos parámetros</h2>
+        <MeasurementGrid latest={latestPerField(series)} />
+      </section>
+
       {activeProblems.length > 0 && (
         <section>
           <div className={styles.problemsHeader}>
@@ -169,7 +169,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       )}
 
       {series.length > 0 && (
-        <section className="card">
+        <section>
           <h2 className="section-title">Evolución reciente</h2>
           <MeasurementChart series={series.slice(-14)} height={180} />
         </section>

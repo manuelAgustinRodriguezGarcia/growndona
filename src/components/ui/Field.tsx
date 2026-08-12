@@ -1,47 +1,13 @@
-import { useId } from "react";
+"use client";
+
+import { useId, useState } from "react";
 import type {
   InputHTMLAttributes,
-  SelectHTMLAttributes,
   TextareaHTMLAttributes,
-  ReactNode,
 } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { FieldWrapper } from "./FieldWrapper";
 import styles from "./Field.module.scss";
-
-type FieldWrapperProps = {
-  label?: string;
-  required?: boolean;
-  error?: string;
-  hint?: string;
-  htmlFor: string;
-  children: ReactNode;
-};
-
-function FieldWrapper({
-  label,
-  required,
-  error,
-  hint,
-  htmlFor,
-  children,
-}: FieldWrapperProps) {
-  return (
-    <div className={styles.field}>
-      {label && (
-        <label className={styles.label} htmlFor={htmlFor}>
-          {label}
-          {required && (
-            <span className={styles.required} aria-hidden="true">
-              *
-            </span>
-          )}
-        </label>
-      )}
-      {children}
-      {error && <span className={styles.errorText}>{error}</span>}
-      {!error && hint && <span className={styles.hint}>{hint}</span>}
-    </div>
-  );
-}
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -70,40 +36,51 @@ export function Input({ label, error, hint, required, id, ...rest }: InputProps)
   );
 }
 
-type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
+type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
   label: string;
   error?: string;
   hint?: string;
-  children: ReactNode;
 };
 
-export function Select({
+export function PasswordInput({
   label,
   error,
   hint,
   required,
   id,
-  children,
   ...rest
-}: SelectProps) {
+}: PasswordInputProps) {
   const autoId = useId();
-  const selectId = id ?? autoId;
+  const inputId = id ?? autoId;
+  const [visible, setVisible] = useState(false);
+
   return (
     <FieldWrapper
       label={label}
       required={required}
       error={error}
       hint={hint}
-      htmlFor={selectId}
+      htmlFor={inputId}
     >
-      <select
-        id={selectId}
-        required={required}
-        className={`${styles.control} ${error ? styles.error : ""}`}
-        {...rest}
-      >
-        {children}
-      </select>
+      <div className={styles.passwordWrapper}>
+        <input
+          id={inputId}
+          type={visible ? "text" : "password"}
+          required={required}
+          className={`${styles.control} ${styles.passwordControl} ${error ? styles.error : ""}`}
+          {...rest}
+        />
+        <button
+          type="button"
+          className={styles.passwordToggle}
+          onClick={() => setVisible((v) => !v)}
+          aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+          aria-pressed={visible}
+          tabIndex={-1}
+        >
+          {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
     </FieldWrapper>
   );
 }

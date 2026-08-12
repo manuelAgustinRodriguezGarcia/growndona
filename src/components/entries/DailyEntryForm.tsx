@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import {
+  AlertTriangle,
   BrushCleaning,
   Cannabis,
   Droplets,
@@ -286,6 +288,13 @@ export function DailyEntryForm({
               </button>
             );
           })}
+          <Link
+            href={`/cultivos/${cultivationId}/problemas/nuevo`}
+            className={`${styles.actionCard} ${styles.actionProblem}`}
+          >
+            <AlertTriangle size={18} aria-hidden="true" />
+            Problema
+          </Link>
         </div>
 
         {(irrigation || selectedActions.length > 0) && (

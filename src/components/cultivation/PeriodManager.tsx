@@ -8,7 +8,9 @@ import { todayISO } from "@/lib/utils/dates";
 import { PERIOD_OPTIONS, periodTypeLabel } from "@/lib/utils/labels";
 import type { PeriodType } from "@/types/database";
 import { Button } from "@/components/ui/Button";
-import { Input, Select } from "@/components/ui/Field";
+import { Input } from "@/components/ui/Field";
+import { Select } from "@/components/ui/Select";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import styles from "@/styles/form.module.scss";
@@ -86,15 +88,10 @@ export function PeriodManager({
           <Select
             label="Nuevo período"
             value={type}
-            onChange={(e) => setType(e.target.value as PeriodType)}
+            onChange={(next) => setType(next as PeriodType)}
+            options={PERIOD_OPTIONS}
             required
-          >
-            {PERIOD_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
+          />
           {type === "custom" && (
             <Input
               label="Nombre del período"
@@ -104,11 +101,10 @@ export function PeriodManager({
               required
             />
           )}
-          <Input
+          <DatePicker
             label="Fecha de inicio"
-            type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={setStartDate}
             required
           />
           <div className={styles.actions}>
