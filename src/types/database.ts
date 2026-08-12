@@ -40,7 +40,22 @@ export type Cultivation = {
   environment: string | null;
   cover_image_url: string | null;
   final_notes: string | null;
+  harvest_grams: number | null;
+  final_grams: number | null;
   status: CultivationStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type Plant = {
+  id: string;
+  cultivation_id: string;
+  number: number;
+  genetics: string | null;
+  method: string | null;
+  environment: string | null;
+  medium: string | null;
+  description: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -64,9 +79,18 @@ export type DailyEntry = {
   updated_at: string;
 }
 
+export type CultivationGenetic = {
+  id: string;
+  cultivation_id: string;
+  name: string;
+  name_key: string;
+  created_at: string;
+}
+
 export type Measurement = {
   id: string;
   daily_entry_id: string;
+  genetic_id: string | null;
   temperature: number | null;
   humidity: number | null;
   ph: number | null;
@@ -148,6 +172,19 @@ export type Database = {
     Tables: {
       profiles: TableDef<Profile, "id" | "name">;
       cultivations: TableDef<Cultivation, "user_id" | "name" | "start_date">;
+      plants: TableDef<
+        Plant,
+        "cultivation_id" | "number",
+        [
+          {
+            foreignKeyName: "plants_cultivation_id_fkey";
+            columns: ["cultivation_id"];
+            isOneToOne: false;
+            referencedRelation: "cultivations";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
       cultivation_periods: TableDef<
         CultivationPeriod,
         "cultivation_id" | "type" | "name" | "start_date",
@@ -174,6 +211,19 @@ export type Database = {
           },
         ]
       >;
+      cultivation_genetics: TableDef<
+        CultivationGenetic,
+        "cultivation_id" | "name" | "name_key",
+        [
+          {
+            foreignKeyName: "cultivation_genetics_cultivation_id_fkey";
+            columns: ["cultivation_id"];
+            isOneToOne: false;
+            referencedRelation: "cultivations";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
       measurements: TableDef<
         Measurement,
         "daily_entry_id",
@@ -181,8 +231,15 @@ export type Database = {
           {
             foreignKeyName: "measurements_daily_entry_id_fkey";
             columns: ["daily_entry_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "daily_entries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "measurements_genetic_id_fkey";
+            columns: ["genetic_id"];
+            isOneToOne: false;
+            referencedRelation: "cultivation_genetics";
             referencedColumns: ["id"];
           },
         ]

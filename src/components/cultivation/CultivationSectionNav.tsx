@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition, type MouseEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { LoadingScreen } from "@/components/layout/LoadingScreen";
 import {
   Activity,
   AlertTriangle,
@@ -36,15 +38,34 @@ export function CultivationSectionNav({
   cultivationId,
   active,
 }: CultivationSectionNavProps) {
+  const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const current = SECTIONS.find((s) => s.key === active) ?? SECTIONS[0];
   const CurrentIcon = current.icon;
+
+  function navigate(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0
+    ) {
+      return;
+    }
+    event.preventDefault();
+    setOpen(false);
+    startTransition(() => {
+      router.push(href);
+    });
+  }
 
   useEffect(() => {
     if (!open) return;
 
-    function onPointerDown(event: MouseEvent) {
+    function onPointerDown(event: globalThis.MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false);
       }
@@ -87,12 +108,13 @@ export function CultivationSectionNav({
           {SECTIONS.map((section) => {
             const Icon = section.icon;
             const selected = section.key === current.key;
+            const href = `/cultivos/${cultivationId}?tab=${section.key}`;
             return (
               <li key={section.key} role="option" aria-selected={selected}>
                 <Link
-                  href={`/cultivos/${cultivationId}?tab=${section.key}`}
+                  href={href}
                   className={`${styles.option} ${selected ? styles.optionActive : ""}`}
-                  onClick={() => setOpen(false)}
+                  onClick={(event) => navigate(event, href)}
                 >
                   <Icon size={18} aria-hidden="true" />
                   {section.label}
@@ -102,6 +124,7 @@ export function CultivationSectionNav({
           })}
         </ul>
       )}
+      {isPending && <LoadingScreen />}
     </div>
   );
 }

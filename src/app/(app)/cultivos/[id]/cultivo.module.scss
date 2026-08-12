@@ -106,6 +106,19 @@
   grid-column: 1 / -1;
 }
 
+.geneticLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green-light);
+  margin-bottom: 6px;
+}
+
+.geneticStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .periodRow {
   display: flex;
   align-items: center;

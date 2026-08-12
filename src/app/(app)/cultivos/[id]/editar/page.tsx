@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getCultivation } from "@/lib/queries/cultivations";
+import { getPlants } from "@/lib/queries/plants";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EditCultivationForm } from "@/components/cultivation/EditCultivationForm";
 
@@ -23,6 +24,8 @@ export default async function EditCultivationPage({ params }: PageProps) {
   const cultivation = await getCultivation(supabase, id);
   if (!cultivation) notFound();
 
+  const plants = await getPlants(supabase, id);
+
   return (
     <>
       <PageHeader
@@ -31,7 +34,11 @@ export default async function EditCultivationPage({ params }: PageProps) {
         backHref={`/cultivos/${id}?tab=info`}
         backLabel={cultivation.name}
       />
-      <EditCultivationForm cultivation={cultivation} userId={user.id} />
+      <EditCultivationForm
+        cultivation={cultivation}
+        plants={plants}
+        userId={user.id}
+      />
     </>
   );
 }

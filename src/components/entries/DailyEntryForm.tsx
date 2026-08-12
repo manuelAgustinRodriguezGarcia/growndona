@@ -24,6 +24,7 @@ import {
   upsertDailyEntry,
   type EntryDetails,
 } from "@/lib/queries/entries";
+import { ensureCultivationGenetic } from "@/lib/queries/genetics";
 import {
   addPhotoRecord,
   buildEntryPhotoPath,
@@ -31,13 +32,19 @@ import {
   uploadPhoto,
 } from "@/lib/queries/photos";
 import { todayISO } from "@/lib/utils/dates";
+import { getGeneticGroups } from "@/lib/utils/genetics";
 import {
   ACTION_OPTIONS,
   MEASUREMENT_FIELDS,
   actionLabel,
   type MeasurementKey,
 } from "@/lib/utils/labels";
-import type { ActionType } from "@/types/database";
+import type {
+  ActionType,
+  CultivationGenetic,
+  Measurement,
+  Plant,
+} from "@/types/database";
 import { Button } from "@/components/ui/Button";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Input, Textarea } from "@/components/ui/Field";
@@ -58,7 +65,11 @@ type DailyEntryFormProps = {
   date: string;
   existing: EntryDetails | null;
   existingPhotos: ExistingPhoto[];
+  plants: Plant[];
+  genetics: CultivationGenetic[];
 };
+
+const GENERAL_KEY = "__general__";
 
 const RANGES: Record<MeasurementKey, { min: number; max: number }> = {
   temperature: { min: -20, max: 70 },
@@ -92,18 +103,44 @@ export function DailyEntryForm({
   date,
   existing,
   existingPhotos,
+  plants,
+  genetics,
 }: DailyEntryFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [values, setValues] = useState<Record<MeasurementKey, string>>(() => {
-    const initial = {} as Record<MeasurementKey, string>;
-    for (const field of MEASUREMENT_FIELDS) {
-      const value = existing?.measurements?.[field.key];
-      initial[field.key] = value !== null && value !== undefined ? String(value) : "";
+  const { groups, unassignedCount } = getGeneticGroups(plants);
+  const paramKeys = groups.length > 0 ? groups.map((g) => g.key) : [GENERAL_KEY];
+  const geneticByKey = new Map(genetics.map((g) => [g.name_key, g]));
+  const isToday = date === todayISO();
+
+  function findExistingMeasurement(key: string): Measurement | undefined {
+    if (!existing) return undefined;
+    if (key === GENERAL_KEY) {
+      return existing.measurements.find((m) => m.genetic_id === null);
+    }
+    const genetic = geneticByKey.get(key);
+    if (!genetic) return undefined;
+    return existing.measurements.find((m) => m.genetic_id === genetic.id);
+  }
+
+  const [values, setValues] = useState<
+    Record<string, Record<MeasurementKey, string>>
+  >(() => {
+    const initial: Record<string, Record<MeasurementKey, string>> = {};
+    for (const key of paramKeys) {
+      const row = findExistingMeasurement(key);
+      const fields = {} as Record<MeasurementKey, string>;
+      for (const field of MEASUREMENT_FIELDS) {
+        const value = row?.[field.key];
+        fields[field.key] =
+          value !== null && value !== undefined ? String(value) : "";
+      }
+      initial[key] = fields;
     }
     return initial;
   });
+  const [selectedKey, setSelectedKey] = useState(paramKeys[0]);
 
   const [irrigation, setIrrigation] = useState(
     (existing?.irrigations.length ?? 0) > 0
@@ -148,23 +185,47 @@ export function DailyEntryForm({
     if (saving) return;
     setError(null);
 
-    const parsed = {} as Record<MeasurementKey, number | null>;
-    for (const field of MEASUREMENT_FIELDS) {
-      const result = parseDecimal(values[field.key]);
-      if (result === undefined) {
-        setError(`El valor de ${field.label} no es un número válido.`);
-        return;
-      }
-      if (result !== null) {
-        const range = RANGES[field.key];
-        if (result < range.min || result > range.max) {
-          setError(
-            `${field.label} debe estar entre ${range.min} y ${range.max}.`
-          );
+    const parsedByKey: Record<string, Record<MeasurementKey, number | null>> =
+      {};
+    for (const key of paramKeys) {
+      const group = groups.find((g) => g.key === key);
+      const suffix = groups.length > 1 && group ? ` (${group.name})` : "";
+      const parsed = {} as Record<MeasurementKey, number | null>;
+      for (const field of MEASUREMENT_FIELDS) {
+        const result = parseDecimal(values[key][field.key]);
+        if (result === undefined) {
+          setError(`El valor de ${field.label}${suffix} no es un número válido.`);
           return;
         }
+        if (result !== null) {
+          const range = RANGES[field.key];
+          if (result < range.min || result > range.max) {
+            setError(
+              `${field.label}${suffix} debe estar entre ${range.min} y ${range.max}.`
+            );
+            return;
+          }
+        }
+        parsed[field.key] = result;
       }
-      parsed[field.key] = result;
+      parsedByKey[key] = parsed;
+    }
+
+    const hasMeasurement = paramKeys.some((key) =>
+      MEASUREMENT_FIELDS.some((field) => parsedByKey[key][field.key] !== null)
+    );
+    const hasContent =
+      hasMeasurement ||
+      irrigation ||
+      selectedActions.length > 0 ||
+      notes.trim().length > 0 ||
+      newFiles.length > 0 ||
+      visiblePhotos.length > 0;
+    if (!hasContent) {
+      setError(
+        "Cargá al menos un dato para guardar el registro: un parámetro, riego, acción, foto o nota."
+      );
+      return;
     }
 
     setSaving(true);
@@ -178,7 +239,32 @@ export function DailyEntryForm({
         notes.trim() || null
       );
 
-      await saveMeasurements(supabase, entry.id, parsed);
+      for (const key of paramKeys) {
+        const parsed = parsedByKey[key];
+        const hasValues = MEASUREMENT_FIELDS.some(
+          (field) => parsed[field.key] !== null
+        );
+        const existingRow = findExistingMeasurement(key);
+        if (!hasValues && !existingRow) continue;
+
+        if (key === GENERAL_KEY) {
+          await saveMeasurements(supabase, entry.id, null, parsed);
+          continue;
+        }
+
+        const group = groups.find((g) => g.key === key)!;
+        let geneticId =
+          geneticByKey.get(key)?.id ?? existingRow?.genetic_id ?? null;
+        if (!geneticId) {
+          const genetic = await ensureCultivationGenetic(
+            supabase,
+            cultivationId,
+            group.name
+          );
+          geneticId = genetic.id;
+        }
+        await saveMeasurements(supabase, entry.id, geneticId, parsed);
+      }
 
       await replaceActions(
         supabase,
@@ -244,16 +330,99 @@ export function DailyEntryForm({
 
       <div className={styles.section}>
         <span className={formStyles.blockTitle}>Parámetros</span>
+
+        {unassignedCount > 0 && groups.length > 0 && (
+          <p className={styles.geneticWarning}>
+            {unassignedCount === 1
+              ? "Hay 1 planta sin genética asignada. Asignale una genética para poder registrar sus parámetros correctamente."
+              : `Hay ${unassignedCount} plantas sin genética asignada. Asignales una genética para poder registrar sus parámetros correctamente.`}
+          </p>
+        )}
+
+        {groups.length > 1 && (
+          <>
+            <p className={styles.geneticPrompt}>¿Qué genética querés registrar?</p>
+            <div
+              className={styles.geneticGrid}
+              role="radiogroup"
+              aria-label="Genética"
+            >
+              {groups.map((group) => {
+                const active = selectedKey === group.key;
+                const registered = Boolean(findExistingMeasurement(group.key));
+                return (
+                  <button
+                    key={group.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    className={`${styles.geneticCard} ${active ? styles.geneticCardActive : ""}`}
+                    onClick={() => setSelectedKey(group.key)}
+                  >
+                    <span className={styles.geneticName}>{group.name}</span>
+                    <span className={styles.geneticCount}>
+                      {group.plantCount}{" "}
+                      {group.plantCount === 1 ? "planta" : "plantas"}
+                    </span>
+                    <span
+                      className={
+                        registered
+                          ? styles.geneticRegistered
+                          : styles.geneticPending
+                      }
+                    >
+                      {registered
+                        ? isToday
+                          ? "✓ Registrado hoy"
+                          : "✓ Registrado"
+                        : isToday
+                          ? "Sin registro hoy"
+                          : "Sin registro"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {groups.length === 1 && (
+          <div className={styles.geneticSingle}>
+            <span className={styles.geneticName}>
+              {groups[0].name} · {groups[0].plantCount}{" "}
+              {groups[0].plantCount === 1 ? "planta" : "plantas"}
+            </span>
+            <span className={styles.geneticHint}>
+              Estos parámetros se aplicarán al grupo completo de plantas{" "}
+              {groups[0].name}.
+            </span>
+          </div>
+        )}
+
+        {groups.length === 0 && (
+          <p className={styles.geneticHint}>
+            Las plantas de este cultivo no tienen genética asignada, así que los
+            parámetros se guardan como generales del cultivo. Asignales una
+            genética para hacer seguimiento por genética.
+          </p>
+        )}
+
         <div className={styles.paramsGrid}>
           {MEASUREMENT_FIELDS.map((field) => (
             <Input
-              key={field.key}
+              key={`${selectedKey}-${field.key}`}
               label={field.shortLabel}
               inputMode="decimal"
               placeholder="—"
-              value={values[field.key]}
+              value={values[selectedKey][field.key]}
               onChange={(e) =>
-                setValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                setValues((prev) => ({
+                  ...prev,
+                  [selectedKey]: {
+                    ...prev[selectedKey],
+                    [field.key]: e.target.value,
+                  },
+                }))
               }
             />
           ))}

@@ -91,6 +91,25 @@ export async function createPeriod(
   return data;
 }
 
+export async function updatePeriod(
+  db: DB,
+  id: string,
+  values: Partial<
+    Pick<CultivationPeriod, "type" | "name" | "start_date" | "end_date">
+  >
+): Promise<void> {
+  const { error } = await db
+    .from("cultivation_periods")
+    .update(values)
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function deletePeriod(db: DB, id: string): Promise<void> {
+  const { error } = await db.from("cultivation_periods").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function closeOpenPeriods(
   db: DB,
   cultivationId: string,

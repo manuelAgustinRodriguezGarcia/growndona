@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getCultivation } from "@/lib/queries/cultivations";
 import { getEntryByDate } from "@/lib/queries/entries";
+import { getCultivationGenetics } from "@/lib/queries/genetics";
+import { getPlants } from "@/lib/queries/plants";
 import { getSignedUrlMap } from "@/lib/queries/photos";
 import { dayNumber, todayISO } from "@/lib/utils/dates";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -30,7 +32,11 @@ export default async function RegisterDayPage({ params, searchParams }: PageProp
   if (!cultivation) notFound();
 
   const date = fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha : todayISO();
-  const existing = await getEntryByDate(supabase, id, date);
+  const [existing, plants, genetics] = await Promise.all([
+    getEntryByDate(supabase, id, date),
+    getPlants(supabase, id),
+    getCultivationGenetics(supabase, id),
+  ]);
 
   const photoPaths = existing?.photos.map((p) => p.storage_path) ?? [];
   const urlMap = await getSignedUrlMap(supabase, photoPaths);
@@ -60,6 +66,8 @@ export default async function RegisterDayPage({ params, searchParams }: PageProp
         date={date}
         existing={existing}
         existingPhotos={existingPhotos}
+        plants={plants}
+        genetics={genetics}
       />
     </>
   );

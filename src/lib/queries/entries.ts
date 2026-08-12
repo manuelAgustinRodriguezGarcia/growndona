@@ -12,7 +12,7 @@ import type {
 type DB = SupabaseClient<Database>;
 
 export type EntryDetails = DailyEntry & {
-  measurements: Measurement | null;
+  measurements: Measurement[];
   irrigations: Irrigation[];
   actions: Action[];
   photos: Photo[];
@@ -88,6 +88,7 @@ export async function upsertDailyEntry(
 export async function saveMeasurements(
   db: DB,
   dailyEntryId: string,
+  geneticId: string | null,
   values: {
     temperature: number | null;
     humidity: number | null;
@@ -98,18 +99,23 @@ export async function saveMeasurements(
 ): Promise<void> {
   const empty = Object.values(values).every((v) => v === null);
   if (empty) {
-    const { error } = await db
+    let query = db
       .from("measurements")
       .delete()
       .eq("daily_entry_id", dailyEntryId);
+    query =
+      geneticId === null
+        ? query.is("genetic_id", null)
+        : query.eq("genetic_id", geneticId);
+    const { error } = await query;
     if (error) throw error;
     return;
   }
   const { error } = await db
     .from("measurements")
     .upsert(
-      { daily_entry_id: dailyEntryId, ...values },
-      { onConflict: "daily_entry_id" }
+      { daily_entry_id: dailyEntryId, genetic_id: geneticId, ...values },
+      { onConflict: "daily_entry_id,genetic_id" }
     );
   if (error) throw error;
 }
@@ -190,26 +196,3 @@ export type MeasurementPoint = {
   ec: number | null;
   ppm: number | null;
 };
-
-export async function getMeasurementSeries(
-  db: DB,
-  cultivationId: string
-): Promise<MeasurementPoint[]> {
-  const { data, error } = await db
-    .from("daily_entries")
-    .select("entry_date, measurements(*)")
-    .eq("cultivation_id", cultivationId)
-    .order("entry_date", { ascending: true });
-  if (error) throw error;
-
-  return data
-    .filter((row) => row.measurements !== null)
-    .map((row) => ({
-      entry_date: row.entry_date,
-      temperature: row.measurements!.temperature,
-      humidity: row.measurements!.humidity,
-      ph: row.measurements!.ph,
-      ec: row.measurements!.ec,
-      ppm: row.measurements!.ppm,
-    }));
-}

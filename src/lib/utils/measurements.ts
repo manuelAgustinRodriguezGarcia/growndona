@@ -1,6 +1,54 @@
-import type { MeasurementPoint } from "@/lib/queries/entries";
+import type { EntryDetails, MeasurementPoint } from "@/lib/queries/entries";
 import type { MeasurementKey } from "@/lib/utils/labels";
 import { MEASUREMENT_FIELDS } from "@/lib/utils/labels";
+import type { CultivationGenetic } from "@/types/database";
+
+export const GENERAL_SERIES_LABEL = "Generales";
+
+export type GeneticSeries = {
+  geneticId: string | null;
+  label: string;
+  series: MeasurementPoint[];
+};
+
+export function buildGeneticSeries(
+  entries: EntryDetails[],
+  genetics: CultivationGenetic[]
+): GeneticSeries[] {
+  const byId = new Map<string | null, MeasurementPoint[]>();
+
+  const ascending = [...entries].sort((a, b) =>
+    a.entry_date.localeCompare(b.entry_date)
+  );
+  for (const entry of ascending) {
+    for (const measurement of entry.measurements) {
+      const key = measurement.genetic_id;
+      const list = byId.get(key) ?? [];
+      list.push({
+        entry_date: entry.entry_date,
+        temperature: measurement.temperature,
+        humidity: measurement.humidity,
+        ph: measurement.ph,
+        ec: measurement.ec,
+        ppm: measurement.ppm,
+      });
+      byId.set(key, list);
+    }
+  }
+
+  const result: GeneticSeries[] = [];
+  for (const genetic of genetics) {
+    const series = byId.get(genetic.id);
+    if (series) {
+      result.push({ geneticId: genetic.id, label: genetic.name, series });
+    }
+  }
+  const general = byId.get(null);
+  if (general) {
+    result.push({ geneticId: null, label: GENERAL_SERIES_LABEL, series: general });
+  }
+  return result;
+}
 
 export type LatestValue = { value: number; date: string } | null;
 

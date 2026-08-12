@@ -52,6 +52,19 @@
   }
 }
 
+.measurementGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.measurementGenetic {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--green-light);
+  margin-bottom: 5px;
+}
+
 .measurements {
   display: flex;
   flex-wrap: wrap;

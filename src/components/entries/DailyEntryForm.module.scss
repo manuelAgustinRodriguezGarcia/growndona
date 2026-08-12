@@ -4,6 +4,89 @@
   gap: 14px;
 }
 
+.geneticPrompt {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.geneticGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+
+  @media (min-width: 480px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.geneticCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-height: 72px;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  &:hover {
+    border-color: var(--border-strong);
+  }
+}
+
+.geneticCardActive {
+  border-color: var(--green);
+  background: var(--green-soft);
+
+  &:hover {
+    border-color: var(--green);
+  }
+}
+
+.geneticName {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.geneticCount {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.geneticRegistered {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green-light);
+}
+
+.geneticPending {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.geneticSingle {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.geneticHint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.geneticWarning {
+  font-size: 13px;
+  color: var(--warning);
+}
+
 .paramsGrid {
   display: flex;
   flex-wrap: nowrap;

@@ -19,6 +19,7 @@ type TimelineEntryProps = {
   periods: CultivationPeriod[];
   photoUrls: Map<string, string>;
   problems?: Problem[];
+  geneticNames?: Record<string, string>;
 };
 
 export function TimelineEntry({
@@ -27,10 +28,15 @@ export function TimelineEntry({
   periods,
   photoUrls,
   problems = [],
+  geneticNames = {},
 }: TimelineEntryProps) {
   const day = dayNumber(startDate, entry.entry_date);
   const period = periodForDate(periods, entry.entry_date);
-  const measurements = entry.measurements;
+  const measurements = [...entry.measurements].sort((a, b) => {
+    const nameA = a.genetic_id ? (geneticNames[a.genetic_id] ?? "") : "\uffff";
+    const nameB = b.genetic_id ? (geneticNames[b.genetic_id] ?? "") : "\uffff";
+    return nameA.localeCompare(nameB);
+  });
   const hasIrrigation = entry.irrigations.length > 0;
   const dayProblems = problems.filter((p) => p.detected_at === entry.entry_date);
 
@@ -54,16 +60,30 @@ export function TimelineEntry({
         </Link>
       </div>
 
-      {measurements && (
-        <div className={styles.measurements}>
-          {MEASUREMENT_FIELDS.map((field) => {
-            const value = measurements[field.key];
-            if (value === null) return null;
+      {measurements.length > 0 && (
+        <div className={styles.measurementGroups}>
+          {measurements.map((measurement) => {
+            const label = measurement.genetic_id
+              ? (geneticNames[measurement.genetic_id] ?? "Genética")
+              : measurements.length > 1
+                ? "Generales"
+                : null;
             return (
-              <span key={field.key} className={styles.measurement}>
-                <span>{field.label}</span>
-                {formatMeasurement(field.key, value)}
-              </span>
+              <div key={measurement.id}>
+                {label && <p className={styles.measurementGenetic}>{label}</p>}
+                <div className={styles.measurements}>
+                  {MEASUREMENT_FIELDS.map((field) => {
+                    const value = measurement[field.key];
+                    if (value === null) return null;
+                    return (
+                      <span key={field.key} className={styles.measurement}>
+                        <span>{field.label}</span>
+                        {formatMeasurement(field.key, value)}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>

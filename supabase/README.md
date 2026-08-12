@@ -16,6 +16,9 @@ Abrir **SQL Editor** en el dashboard y ejecutar el contenido de cada archivo, en
 2. `migrations/0002_rls.sql` — activa Row Level Security en todas las tablas y crea las policies. Un usuario solo puede leer/crear/modificar/eliminar datos de sus propios cultivos.
 3. `migrations/0003_storage.sql` — crea el bucket `cultivation-photos` (privado, 5 MB máximo, solo JPG/JPEG/PNG/WEBP) y sus policies de storage.
 4. `migrations/0004_username.sql` — agrega la columna `username` a `profiles` (único, minúsculas, 3-20 caracteres), asigna usernames a cuentas existentes a partir del email, y crea la función `get_email_for_username` que permite iniciar sesión con nombre de usuario.
+5. `migrations/0005_production_grams.sql` — agrega las columnas `harvest_grams` y `final_grams` a `cultivations`.
+6. `migrations/0006_plants.sql` — crea la tabla `plants` (una fila por planta de cada cultivo, con genética, método, ambiente, sustrato y descripción individuales), sus policies de RLS, y genera automáticamente las plantas de los cultivos existentes a partir de `plant_count`.
+7. `migrations/0007_genetic_parameters.sql` — crea la tabla `cultivation_genetics` (genéticas estables por cultivo, con nombre normalizado único) con sus policies de RLS, permite múltiples filas de `measurements` por entrada diaria (una por genética, vía `genetic_id`), pre-crea las genéticas a partir de las plantas existentes y asocia las mediciones históricas a la genética del cultivo cuando este tiene una sola (los registros de cultivos con varias genéticas quedan como generales/legacy).
 
 Si preferís usar la CLI de Supabase, los archivos también funcionan con `supabase db push` colocándolos en `supabase/migrations/`.
 

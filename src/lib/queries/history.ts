@@ -43,7 +43,7 @@ export async function getRecentActivity(
       cultivationId: entry.cultivation_id,
       cultivationName: entry.cultivations.name,
     };
-    if (entry.measurements) {
+    if (entry.measurements.length > 0) {
       items.push({
         ...base,
         id: `${entry.id}-measurements`,

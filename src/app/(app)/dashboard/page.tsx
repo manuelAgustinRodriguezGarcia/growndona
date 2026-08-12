@@ -4,11 +4,12 @@ import type { Metadata } from "next";
 import { Droplets, NotebookPen, Scissors, Sprout } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCultivations } from "@/lib/queries/cultivations";
-import { getEntries, type MeasurementPoint } from "@/lib/queries/entries";
+import { getEntries } from "@/lib/queries/entries";
+import { getCultivationGenetics } from "@/lib/queries/genetics";
 import { getProblems } from "@/lib/queries/problems";
 import { getSignedUrlMap } from "@/lib/queries/photos";
 import { relativeDate } from "@/lib/utils/dates";
-import { latestPerField } from "@/lib/utils/measurements";
+import { buildGeneticSeries, latestPerField } from "@/lib/utils/measurements";
 import { CultivationHeader } from "@/components/cultivation/CultivationHeader";
 import { MeasurementGrid } from "@/components/cultivation/MeasurementGrid";
 import { QuickActions } from "@/components/entries/QuickActions";
@@ -56,9 +57,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const selected = active.find((cult) => cult.id === c) ?? active[0];
 
-  const [entries, problems] = await Promise.all([
+  const [entries, problems, genetics] = await Promise.all([
     getEntries(supabase, selected.id),
     getProblems(supabase, selected.id),
+    getCultivationGenetics(supabase, selected.id),
   ]);
 
   const coverUrl = selected.cover_image_url
@@ -67,17 +69,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       ) ?? null)
     : null;
 
-  const series: MeasurementPoint[] = [...entries]
-    .reverse()
-    .filter((entry) => entry.measurements !== null)
-    .map((entry) => ({
-      entry_date: entry.entry_date,
-      temperature: entry.measurements!.temperature,
-      humidity: entry.measurements!.humidity,
-      ph: entry.measurements!.ph,
-      ec: entry.measurements!.ec,
-      ppm: entry.measurements!.ppm,
-    }));
+  const geneticSeries = buildGeneticSeries(entries, genetics);
+  const hasSeries = geneticSeries.length > 0;
 
   const lastEntry = entries[0] ?? null;
   const lastIrrigationEntry = entries.find((e) => e.irrigations.length > 0) ?? null;
@@ -145,7 +138,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
       <section>
         <h2 className="section-title">Últimos parámetros</h2>
-        <MeasurementGrid latest={latestPerField(series)} />
+        {geneticSeries.length <= 1 ? (
+          <MeasurementGrid latest={latestPerField(geneticSeries[0]?.series ?? [])} />
+        ) : (
+          <div className={styles.geneticStack}>
+            {geneticSeries.map((group) => (
+              <div key={group.geneticId ?? "general"}>
+                <p className={styles.geneticLabel}>{group.label}</p>
+                <MeasurementGrid latest={latestPerField(group.series)} />
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {activeProblems.length > 0 && (
@@ -168,10 +172,19 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </section>
       )}
 
-      {series.length > 0 && (
+      {hasSeries && (
         <section>
           <h2 className="section-title">Evolución reciente</h2>
-          <MeasurementChart series={series.slice(-14)} height={180} />
+          <div className={styles.geneticStack}>
+            {geneticSeries.map((group) => (
+              <div key={group.geneticId ?? "general"}>
+                {geneticSeries.length > 1 && (
+                  <p className={styles.geneticLabel}>{group.label}</p>
+                )}
+                <MeasurementChart series={group.series.slice(-14)} height={180} />
+              </div>
+            ))}
+          </div>
         </section>
       )}
     </div>

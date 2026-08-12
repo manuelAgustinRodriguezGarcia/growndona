@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   addMonths,
   eachDayOfInterval,
@@ -52,8 +53,15 @@ export function DatePicker({
   const autoId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [above, setAbove] = useState(false);
+  const [rect, setRect] = useState<{
+    top: number;
+    bottom: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const selected = parseLocalDate(value);
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(selected));
   const [syncedValue, setSyncedValue] = useState(value);
@@ -63,11 +71,23 @@ export function DatePicker({
     setViewMonth(startOfMonth(selected));
   }
 
+  function updateRect() {
+    const r = triggerRef.current?.getBoundingClientRect();
+    if (!r) return;
+    setRect({ top: r.top, bottom: r.bottom, left: r.left, width: r.width });
+    const spaceBelow = window.innerHeight - r.bottom;
+    setAbove(spaceBelow < POPOVER_HEIGHT && r.top > spaceBelow);
+  }
+
   useEffect(() => {
     if (!open) return;
 
     function onPointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        !rootRef.current?.contains(target) &&
+        !popoverRef.current?.contains(target)
+      ) {
         setOpen(false);
       }
     }
@@ -76,11 +96,19 @@ export function DatePicker({
       if (event.key === "Escape") setOpen(false);
     }
 
+    function onReposition() {
+      updateRect();
+    }
+
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("scroll", onReposition, true);
+    window.addEventListener("resize", onReposition);
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", onReposition, true);
+      window.removeEventListener("resize", onReposition);
     };
   }, [open]);
 
@@ -105,13 +133,7 @@ export function DatePicker({
   }
 
   function toggle() {
-    if (!open) {
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (rect) {
-        const spaceBelow = window.innerHeight - rect.bottom;
-        setAbove(spaceBelow < POPOVER_HEIGHT && rect.top > spaceBelow);
-      }
-    }
+    if (!open) updateRect();
     setOpen((v) => !v);
   }
 
@@ -142,12 +164,20 @@ export function DatePicker({
         <span>{format(selected, "d 'de' MMMM yyyy", { locale: es })}</span>
         <Calendar size={18} aria-hidden="true" />
       </button>
-      {open && (
-        <div
-          className={`${styles.popover} ${above ? styles.above : ""}`}
-          role="dialog"
-          aria-label={accessibleName}
-        >
+      {open &&
+        rect &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className={`${styles.popover} ${above ? styles.above : ""}`}
+            style={{
+              top: above ? rect.top - 6 : rect.bottom + 6,
+              left: rect.left,
+              width: Math.min(rect.width, 320),
+            }}
+            role="dialog"
+            aria-label={accessibleName}
+          >
           <div className={styles.monthBar}>
             <button
               type="button"
@@ -198,8 +228,9 @@ export function DatePicker({
               );
             })}
           </div>
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </div>
   );
 }

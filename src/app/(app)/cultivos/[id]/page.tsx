@@ -12,19 +12,23 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCultivation } from "@/lib/queries/cultivations";
-import { getEntries, type MeasurementPoint } from "@/lib/queries/entries";
+import { getCultivationGenetics } from "@/lib/queries/genetics";
+import { getPlants } from "@/lib/queries/plants";
+import { getEntries } from "@/lib/queries/entries";
 import { getProblems } from "@/lib/queries/problems";
 import { getSignedUrlMap } from "@/lib/queries/photos";
-import { dayNumber, daysBetween, formatDate, formatShortDate, relativeDate } from "@/lib/utils/dates";
-import { currentPeriod, periodLabel, sortedPeriods } from "@/lib/utils/labels";
-import { latestPerField } from "@/lib/utils/measurements";
+import { dayNumber, formatDate, formatShortDate, relativeDate } from "@/lib/utils/dates";
+import { currentPeriod, sortedPeriods } from "@/lib/utils/labels";
+import { buildGeneticSeries, latestPerField } from "@/lib/utils/measurements";
 import { CultivationHeader } from "@/components/cultivation/CultivationHeader";
 import { MeasurementGrid } from "@/components/cultivation/MeasurementGrid";
 import { PeriodManager } from "@/components/cultivation/PeriodManager";
+import { PeriodList } from "@/components/cultivation/PeriodList";
 import { CultivationDangerZone } from "@/components/cultivation/CultivationDangerZone";
 import { TimelineEntry } from "@/components/entries/TimelineEntry";
 import { QuickActions } from "@/components/entries/QuickActions";
 import { MeasurementChart } from "@/components/charts/MeasurementChart";
+import { GeneticParametersPanel } from "@/components/charts/GeneticParametersPanel";
 import { PhotoGrid, type GalleryPhoto } from "@/components/photos/PhotoGrid";
 import { ProblemCard } from "@/components/problems/ProblemCard";
 import { CultivationSectionNav } from "@/components/cultivation/CultivationSectionNav";
@@ -64,9 +68,10 @@ export default async function CultivationPage({ params, searchParams }: PageProp
   const cultivation = await getCultivation(supabase, id);
   if (!cultivation) notFound();
 
-  const [entries, problems] = await Promise.all([
+  const [entries, problems, genetics] = await Promise.all([
     getEntries(supabase, id),
     getProblems(supabase, id),
+    getCultivationGenetics(supabase, id),
   ]);
 
   const coverUrl = cultivation.cover_image_url
@@ -79,17 +84,9 @@ export default async function CultivationPage({ params, searchParams }: PageProp
   const activePeriod = currentPeriod(cultivation.cultivation_periods);
   const isActive = cultivation.status === "active";
 
-  const series: MeasurementPoint[] = [...entries]
-    .reverse()
-    .filter((entry) => entry.measurements !== null)
-    .map((entry) => ({
-      entry_date: entry.entry_date,
-      temperature: entry.measurements!.temperature,
-      humidity: entry.measurements!.humidity,
-      ph: entry.measurements!.ph,
-      ec: entry.measurements!.ec,
-      ppm: entry.measurements!.ppm,
-    }));
+  const geneticSeries = buildGeneticSeries(entries, genetics);
+  const hasSeries = geneticSeries.length > 0;
+  const geneticNames = Object.fromEntries(genetics.map((g) => [g.id, g.name]));
 
   const activeProblems = problems.filter((p) => p.status === "active");
   const resolvedProblems = problems.filter((p) => p.status === "resolved");
@@ -98,6 +95,8 @@ export default async function CultivationPage({ params, searchParams }: PageProp
   const lastIrrigationEntry = entries.find((e) => e.irrigations.length > 0) ?? null;
   const lastPruningEntry =
     entries.find((e) => e.actions.some((a) => a.type === "pruning")) ?? null;
+
+  const plants = tab === "info" ? await getPlants(supabase, id) : [];
 
   let photoUrlMap = new Map<string, string>();
   if (tab === "timeline" || tab === "galeria") {
@@ -146,48 +145,34 @@ export default async function CultivationPage({ params, searchParams }: PageProp
                   Períodos
                 </h2>
                 {isActive && (
-                  <PeriodManager
-                    cultivationId={id}
-                    currentPeriodLabel={activePeriod ? periodLabel(activePeriod) : null}
-                  />
+                  <PeriodManager cultivationId={id} currentPeriod={activePeriod} />
                 )}
               </div>
-              {periods.length === 0 ? (
-                <p className="text-muted" style={{ fontSize: 14 }}>
-                  Este cultivo todavía no tiene períodos.
-                </p>
-              ) : (
-                periods.map((period) => {
-                  const isOpen = !period.end_date;
-                  const duration = daysBetween(
-                    period.start_date,
-                    period.end_date ?? (isActive ? null : cultivation.end_date)
-                  );
-                  return (
-                    <div key={period.id} className={styles.periodRow}>
-                      <div>
-                        <p className={styles.periodName}>{periodLabel(period)}</p>
-                        <p className={styles.periodDates}>
-                          {formatShortDate(period.start_date)}
-                          {period.end_date
-                            ? ` → ${formatShortDate(period.end_date)}`
-                            : " → actual"}
-                        </p>
-                      </div>
-                      <span className={styles.periodDuration}>
-                        {isOpen && isActive
-                          ? `${duration} días · actual`
-                          : `${duration} días`}
-                      </span>
-                    </div>
-                  );
-                })
-              )}
+              <PeriodList
+                cultivationId={id}
+                periods={periods}
+                isActive={isActive}
+                cultivationEndDate={cultivation.end_date}
+                harvestGrams={cultivation.harvest_grams}
+              />
             </section>
 
             <section>
               <h2 className="section-title">Últimos parámetros</h2>
-              <MeasurementGrid latest={latestPerField(series)} />
+              {geneticSeries.length <= 1 ? (
+                <MeasurementGrid
+                  latest={latestPerField(geneticSeries[0]?.series ?? [])}
+                />
+              ) : (
+                <div className={styles.geneticStack}>
+                  {geneticSeries.map((group) => (
+                    <div key={group.geneticId ?? "general"}>
+                      <p className={styles.geneticLabel}>{group.label}</p>
+                      <MeasurementGrid latest={latestPerField(group.series)} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             {isActive && (
@@ -255,10 +240,22 @@ export default async function CultivationPage({ params, searchParams }: PageProp
               </section>
             )}
 
-            {series.length > 0 && (
+            {hasSeries && (
               <section className="card">
                 <h2 className="section-title">Evolución reciente</h2>
-                <MeasurementChart series={series.slice(-14)} height={180} />
+                <div className={styles.geneticStack}>
+                  {geneticSeries.map((group) => (
+                    <div key={group.geneticId ?? "general"}>
+                      {geneticSeries.length > 1 && (
+                        <p className={styles.geneticLabel}>{group.label}</p>
+                      )}
+                      <MeasurementChart
+                        series={group.series.slice(-14)}
+                        height={180}
+                      />
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
           </>
@@ -288,13 +285,14 @@ export default async function CultivationPage({ params, searchParams }: PageProp
                   periods={periods}
                   photoUrls={photoUrlMap}
                   problems={problems}
+                  geneticNames={geneticNames}
                 />
               ))}
             </div>
           ))}
 
         {tab === "parametros" &&
-          (series.length === 0 ? (
+          (!hasSeries ? (
             <EmptyState
               title="Sin parámetros registrados"
               description="Registrá temperatura, humedad, pH, EC o PPM para ver los gráficos."
@@ -308,7 +306,7 @@ export default async function CultivationPage({ params, searchParams }: PageProp
             />
           ) : (
             <section className="card">
-              <MeasurementChart series={series} height={260} showStats />
+              <GeneticParametersPanel groups={geneticSeries} />
             </section>
           ))}
 
@@ -448,48 +446,49 @@ export default async function CultivationPage({ params, searchParams }: PageProp
             </section>
 
             <section className="card">
+              <h2 className="section-title">Plantas</h2>
+              {plants.length === 0 ? (
+                <p className="text-muted" style={{ fontSize: 14 }}>
+                  Este cultivo todavía no tiene plantas configuradas.
+                </p>
+              ) : (
+                plants.map((plant) => {
+                  const title = plant.genetics?.trim()
+                    ? `${plant.genetics.trim()} #${plant.number}`
+                    : `Planta #${plant.number}`;
+                  const summary = [plant.method, plant.environment]
+                    .filter(Boolean)
+                    .join(" · ");
+                  return (
+                    <div key={plant.id} className={styles.periodRow}>
+                      <div>
+                        <p className={styles.periodName}>{title}</p>
+                        <p className={styles.periodDates}>
+                          {summary || "Sin configurar"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </section>
+
+            <section className="card">
               <div className={styles.topBar} style={{ marginBottom: 8 }}>
                 <h2 className="section-title" style={{ marginBottom: 0 }}>
                   Períodos
                 </h2>
                 {isActive && (
-                  <PeriodManager
-                    cultivationId={id}
-                    currentPeriodLabel={activePeriod ? periodLabel(activePeriod) : null}
-                  />
+                  <PeriodManager cultivationId={id} currentPeriod={activePeriod} />
                 )}
               </div>
-              {periods.length === 0 ? (
-                <p className="text-muted" style={{ fontSize: 14 }}>
-                  Este cultivo todavía no tiene períodos.
-                </p>
-              ) : (
-                periods.map((period) => {
-                  const isOpen = !period.end_date;
-                  const duration = daysBetween(
-                    period.start_date,
-                    period.end_date ?? (isActive ? null : cultivation.end_date)
-                  );
-                  return (
-                    <div key={period.id} className={styles.periodRow}>
-                      <div>
-                        <p className={styles.periodName}>{periodLabel(period)}</p>
-                        <p className={styles.periodDates}>
-                          {formatShortDate(period.start_date)}
-                          {period.end_date
-                            ? ` → ${formatShortDate(period.end_date)}`
-                            : " → actual"}
-                        </p>
-                      </div>
-                      <span className={styles.periodDuration}>
-                        {isOpen && isActive
-                          ? `${duration} días · actual`
-                          : `${duration} días`}
-                      </span>
-                    </div>
-                  );
-                })
-              )}
+              <PeriodList
+                cultivationId={id}
+                periods={periods}
+                isActive={isActive}
+                cultivationEndDate={cultivation.end_date}
+                harvestGrams={cultivation.harvest_grams}
+              />
             </section>
 
             <section className="card">

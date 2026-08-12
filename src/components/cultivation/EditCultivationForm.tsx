@@ -5,71 +5,84 @@ import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { updateCultivation } from "@/lib/queries/cultivations";
 import {
+  createPlants,
+  deletePlants,
+  updatePlant,
+} from "@/lib/queries/plants";
+import {
   buildCoverPath,
   removeStorageFiles,
   uploadPhoto,
 } from "@/lib/queries/photos";
-import {
-  ENVIRONMENT_OPTIONS,
-  ENVIRONMENT_SELECT_OPTIONS,
-  METHOD_OPTIONS,
-  METHOD_SELECT_OPTIONS,
-} from "@/lib/utils/labels";
-import type { Cultivation } from "@/types/database";
+import type { Cultivation, Plant } from "@/types/database";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Field";
-import { Select } from "@/components/ui/Select";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { PhotoPicker } from "@/components/photos/PhotoPicker";
 import { useToast } from "@/components/ui/Toast";
+import {
+  MAX_PLANTS,
+  PlantsSection,
+  plantDraftFromDb,
+  plantDraftFromValues,
+  resizePlantDrafts,
+  resolvePlantDraft,
+  sharedPlantValue,
+  type PlantDraft,
+  type PlantGeneralMode,
+} from "@/components/cultivation/PlantsSection";
 import styles from "@/styles/form.module.scss";
 
 type EditCultivationFormProps = {
   cultivation: Cultivation;
+  plants: Plant[];
   userId: string;
 };
 
+function initialDrafts(cultivation: Cultivation, plants: Plant[]): PlantDraft[] {
+  if (plants.length > 0) return plants.map(plantDraftFromDb);
+  const count = Math.max(1, Math.min(cultivation.plant_count, MAX_PLANTS));
+  return Array.from({ length: count }, (_, index) =>
+    plantDraftFromValues(cultivation, index + 1, null)
+  );
+}
+
 export function EditCultivationForm({
   cultivation,
+  plants,
   userId,
 }: EditCultivationFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
-  const knownMethod =
-    !cultivation.method || METHOD_OPTIONS.includes(cultivation.method);
-  const knownEnvironment =
-    !cultivation.environment ||
-    ENVIRONMENT_OPTIONS.includes(cultivation.environment);
-
   const [name, setName] = useState(cultivation.name);
   const [startDate, setStartDate] = useState(cultivation.start_date);
   const [plantCount, setPlantCount] = useState(String(cultivation.plant_count));
-  const [genetics, setGenetics] = useState(cultivation.genetics ?? "");
-  const [method, setMethod] = useState(
-    knownMethod ? (cultivation.method ?? "") : "Otro"
+  const [plantDrafts, setPlantDrafts] = useState<PlantDraft[]>(() =>
+    initialDrafts(cultivation, plants)
   );
-  const [customMethod, setCustomMethod] = useState(
-    knownMethod ? "" : (cultivation.method ?? "")
-  );
-  const [medium, setMedium] = useState(cultivation.medium ?? "");
-  const [environment, setEnvironment] = useState(
-    knownEnvironment ? (cultivation.environment ?? "") : "Otro"
-  );
-  const [customEnvironment, setCustomEnvironment] = useState(
-    knownEnvironment ? "" : (cultivation.environment ?? "")
+  const [generalMode, setGeneralMode] = useState<PlantGeneralMode | null>(
+    "independent"
   );
   const [description, setDescription] = useState(cultivation.description ?? "");
   const [coverFiles, setCoverFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  function handlePlantCountChange(raw: string) {
+    setPlantCount(raw);
+    const parsed = parseInt(raw, 10);
+    if (Number.isFinite(parsed) && parsed >= 1) {
+      setPlantDrafts((prev) => resizePlantDrafts(prev, parsed));
+    }
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (saving) return;
     setError(null);
 
-    const plants = parseInt(plantCount, 10);
+    const parsedCount = parseInt(plantCount, 10);
     if (!name.trim()) {
       setError("El nombre es obligatorio.");
       return;
@@ -78,8 +91,12 @@ export function EditCultivationForm({
       setError("La fecha de inicio es obligatoria.");
       return;
     }
-    if (!Number.isFinite(plants) || plants < 1) {
+    if (!Number.isFinite(parsedCount) || parsedCount < 1) {
       setError("La cantidad de plantas debe ser al menos 1.");
+      return;
+    }
+    if (plantDrafts.length > 1 && !generalMode) {
+      setError("Seleccioná una opción en Detalles plantas general.");
       return;
     }
 
@@ -97,21 +114,40 @@ export function EditCultivationForm({
         coverPath = newPath;
       }
 
-      const resolvedMethod = method === "Otro" ? customMethod.trim() : method;
-      const resolvedEnvironment =
-        environment === "Otro" ? customEnvironment.trim() : environment;
+      const plantValues = plantDrafts.map(resolvePlantDraft);
 
       await updateCultivation(supabase, cultivation.id, {
         name: name.trim(),
         start_date: startDate,
-        plant_count: plants,
-        genetics: genetics.trim() || null,
-        method: resolvedMethod || null,
-        medium: medium.trim() || null,
-        environment: resolvedEnvironment || null,
+        plant_count: plantValues.length,
+        genetics: sharedPlantValue(plantValues.map((p) => p.genetics)),
+        method: sharedPlantValue(plantValues.map((p) => p.method)),
+        medium: sharedPlantValue(plantValues.map((p) => p.medium)),
+        environment: sharedPlantValue(plantValues.map((p) => p.environment)),
         description: description.trim() || null,
         cover_image_url: coverPath,
       });
+
+      const keptIds = new Set(
+        plantDrafts.map((draft) => draft.dbId).filter(Boolean)
+      );
+      const removedIds = plants
+        .filter((plant) => !keptIds.has(plant.id))
+        .map((plant) => plant.id);
+
+      await deletePlants(supabase, removedIds);
+      await Promise.all(
+        plantDrafts
+          .filter((draft) => draft.dbId)
+          .map((draft) =>
+            updatePlant(supabase, draft.dbId!, resolvePlantDraft(draft))
+          )
+      );
+      await createPlants(
+        supabase,
+        cultivation.id,
+        plantDrafts.filter((draft) => !draft.dbId).map(resolvePlantDraft)
+      );
 
       toast("Cultivo actualizado");
       router.push(`/cultivos/${cultivation.id}?tab=info`);
@@ -150,61 +186,25 @@ export function EditCultivationForm({
             type="number"
             inputMode="numeric"
             min={1}
+            max={MAX_PLANTS}
             value={plantCount}
-            onChange={(e) => setPlantCount(e.target.value)}
+            onChange={(e) => handlePlantCountChange(e.target.value)}
             required
           />
         </div>
-      </div>
-
-      <div className={styles.block}>
-        <span className={styles.blockTitle}>Detalles</span>
-        <Input
-          label="Genética"
-          value={genetics}
-          onChange={(e) => setGenetics(e.target.value)}
-        />
-        <div className={styles.row}>
-          <Select
-            label="Método"
-            value={method}
-            onChange={setMethod}
-            options={METHOD_SELECT_OPTIONS}
-            placeholder="Sin especificar"
-          />
-          <Select
-            label="Ambiente"
-            value={environment}
-            onChange={setEnvironment}
-            options={ENVIRONMENT_SELECT_OPTIONS}
-            placeholder="Sin especificar"
-          />
-        </div>
-        {method === "Otro" && (
-          <Input
-            label="Método (otro)"
-            value={customMethod}
-            onChange={(e) => setCustomMethod(e.target.value)}
-          />
-        )}
-        {environment === "Otro" && (
-          <Input
-            label="Ambiente (otro)"
-            value={customEnvironment}
-            onChange={(e) => setCustomEnvironment(e.target.value)}
-          />
-        )}
-        <Input
-          label="Medio / sustrato"
-          value={medium}
-          onChange={(e) => setMedium(e.target.value)}
-        />
         <Textarea
           label="Descripción"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
+
+      <PlantsSection
+        plants={plantDrafts}
+        onPlantsChange={setPlantDrafts}
+        mode={generalMode}
+        onModeChange={setGeneralMode}
+      />
 
       <div className={styles.block}>
         <span className={styles.blockTitle}>Foto de portada</span>

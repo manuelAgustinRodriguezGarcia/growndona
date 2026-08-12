@@ -47,6 +47,33 @@ export function periodForDate(
   return candidates.length > 0 ? candidates[candidates.length - 1] : null;
 }
 
+const PERIOD_STAGE_ORDER: PeriodType[] = [
+  "germination",
+  "seedling",
+  "vegetative",
+  "flowering",
+  "drying",
+  "finished",
+];
+
+export function allowedNextPeriodTypes(
+  current: PeriodType | null
+): PeriodType[] {
+  if (!current || current === "custom") {
+    return PERIOD_OPTIONS.map((option) => option.value);
+  }
+  const index = PERIOD_STAGE_ORDER.indexOf(current);
+  const allowed: PeriodType[] = [];
+  if (index < PERIOD_STAGE_ORDER.length - 1) {
+    allowed.push(PERIOD_STAGE_ORDER[index + 1]);
+  }
+  if (index > 0) {
+    allowed.push(PERIOD_STAGE_ORDER[index - 1]);
+  }
+  allowed.push("custom");
+  return allowed;
+}
+
 export const ACTION_OPTIONS: { value: ActionType; label: string }[] = [
   { value: "pruning", label: "Poda" },
   { value: "defoliation", label: "Defoliación" },
@@ -82,15 +109,16 @@ export type MeasurementKey = "temperature" | "humidity" | "ph" | "ec" | "ppm";
 export const MEASUREMENT_FIELDS: {
   key: MeasurementKey;
   label: string;
+  fullLabel: string;
   shortLabel: string;
   unit: string;
   decimals: number;
 }[] = [
-  { key: "temperature", label: "Temperatura", shortLabel: "Temp. (°C)", unit: "°C", decimals: 1 },
-  { key: "humidity", label: "Humedad", shortLabel: "Hum. (%)", unit: "%", decimals: 0 },
-  { key: "ph", label: "pH", shortLabel: "pH", unit: "", decimals: 1 },
-  { key: "ec", label: "EC", shortLabel: "EC (µS/cm)", unit: "µS/cm", decimals: 0 },
-  { key: "ppm", label: "PPM", shortLabel: "PPM", unit: "", decimals: 0 },
+  { key: "temperature", label: "Temperatura", fullLabel: "Temperatura", shortLabel: "Temp. (°C)", unit: "°C", decimals: 1 },
+  { key: "humidity", label: "Humedad", fullLabel: "Humedad", shortLabel: "Hum. (%)", unit: "%", decimals: 0 },
+  { key: "ph", label: "pH", fullLabel: "Niveles de pH", shortLabel: "pH", unit: "", decimals: 1 },
+  { key: "ec", label: "EC", fullLabel: "Electroconductividad", shortLabel: "EC (µS/cm)", unit: "µS/cm", decimals: 0 },
+  { key: "ppm", label: "PPM", fullLabel: "Concentración (PPM)", shortLabel: "PPM", unit: "", decimals: 0 },
 ];
 
 export function formatMeasurementValue(

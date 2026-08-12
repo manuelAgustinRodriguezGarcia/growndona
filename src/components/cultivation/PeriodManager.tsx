@@ -3,10 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { changePeriod } from "@/lib/queries/cultivations";
+import { changePeriod, updateCultivation } from "@/lib/queries/cultivations";
 import { todayISO } from "@/lib/utils/dates";
-import { PERIOD_OPTIONS, periodTypeLabel } from "@/lib/utils/labels";
-import type { PeriodType } from "@/types/database";
+import {
+  PERIOD_OPTIONS,
+  allowedNextPeriodTypes,
+  periodLabel,
+  periodTypeLabel,
+} from "@/lib/utils/labels";
+import type { CultivationPeriod, PeriodType } from "@/types/database";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
@@ -17,22 +22,42 @@ import styles from "@/styles/form.module.scss";
 
 type PeriodManagerProps = {
   cultivationId: string;
-  currentPeriodLabel: string | null;
+  currentPeriod: CultivationPeriod | null;
 };
 
 export function PeriodManager({
   cultivationId,
-  currentPeriodLabel,
+  currentPeriod,
 }: PeriodManagerProps) {
   const router = useRouter();
   const { toast } = useToast();
 
+  const allowedTypes = allowedNextPeriodTypes(currentPeriod?.type ?? null);
+  const typeOptions = PERIOD_OPTIONS.filter((option) =>
+    allowedTypes.includes(option.value)
+  );
+  const currentPeriodLabel = currentPeriod ? periodLabel(currentPeriod) : null;
+
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState<PeriodType>("vegetative");
+  const [type, setType] = useState<PeriodType>(allowedTypes[0]);
   const [customName, setCustomName] = useState("");
   const [startDate, setStartDate] = useState(todayISO());
+  const [grams, setGrams] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const needsGrams = type === "drying" || type === "finished";
+  const gramsLabel =
+    type === "drying" ? "Producción en gramos" : "Cantidad en gramos";
+
+  function handleOpen() {
+    setType(allowedTypes[0]);
+    setCustomName("");
+    setStartDate(todayISO());
+    setGrams("");
+    setError(null);
+    setOpen(true);
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -48,6 +73,21 @@ export function PeriodManager({
       setError("La fecha de inicio es obligatoria.");
       return;
     }
+    if (currentPeriod && startDate < currentPeriod.start_date) {
+      setError(
+        "La fecha de inicio no puede ser anterior al inicio del período actual."
+      );
+      return;
+    }
+
+    let gramsValue: number | null = null;
+    if (needsGrams) {
+      gramsValue = Number(grams.replace(",", "."));
+      if (!grams.trim() || Number.isNaN(gramsValue) || gramsValue <= 0) {
+        setError("Ingresá una cantidad de gramos válida.");
+        return;
+      }
+    }
 
     setSaving(true);
     try {
@@ -57,7 +97,21 @@ export function PeriodManager({
         name,
         start_date: startDate,
       });
-      toast(`Período cambiado a ${name}`);
+      if (type === "drying") {
+        await updateCultivation(supabase, cultivationId, {
+          harvest_grams: gramsValue,
+        });
+      }
+      if (type === "finished") {
+        await updateCultivation(supabase, cultivationId, {
+          status: "finished",
+          end_date: startDate,
+          final_grams: gramsValue,
+        });
+      }
+      toast(
+        type === "finished" ? "Cultivo finalizado" : `Período cambiado a ${name}`
+      );
       setOpen(false);
       router.refresh();
     } catch {
@@ -69,7 +123,7 @@ export function PeriodManager({
 
   return (
     <>
-      <Button variant="secondary" size="small" onClick={() => setOpen(true)}>
+      <Button variant="secondary" size="small" onClick={handleOpen}>
         Cambiar período
       </Button>
       <Modal open={open} title="Cambiar período" onClose={() => setOpen(false)}>
@@ -77,7 +131,8 @@ export function PeriodManager({
           {currentPeriodLabel && (
             <p className="text-muted" style={{ fontSize: 14 }}>
               Período actual: <strong>{currentPeriodLabel}</strong>. Al
-              confirmar, el período actual se cierra y comienza el nuevo.
+              confirmar, el período actual se cierra y comienza el nuevo. Solo
+              podés avanzar al período siguiente o volver al anterior.
             </p>
           )}
           {error && (
@@ -89,7 +144,7 @@ export function PeriodManager({
             label="Nuevo período"
             value={type}
             onChange={(next) => setType(next as PeriodType)}
-            options={PERIOD_OPTIONS}
+            options={typeOptions}
             required
           />
           {type === "custom" && (
@@ -107,9 +162,27 @@ export function PeriodManager({
             onChange={setStartDate}
             required
           />
+          {needsGrams && (
+            <Input
+              label={gramsLabel}
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              placeholder="Ej: 120"
+              value={grams}
+              onChange={(e) => setGrams(e.target.value)}
+              required
+            />
+          )}
+          {type === "finished" && (
+            <p className="text-muted" style={{ fontSize: 13 }}>
+              Al confirmar, el cultivo se marca como finalizado.
+            </p>
+          )}
           <div className={styles.actions}>
             <Button type="submit" loading={saving}>
-              Confirmar cambio
+              {type === "finished" ? "Finalizar cultivo" : "Confirmar cambio"}
             </Button>
           </div>
         </form>

@@ -15,13 +15,13 @@ export function MeasurementGrid({ latest }: MeasurementGridProps) {
         const item = latest[field.key];
         return (
           <div key={field.key} className={styles.cell}>
-            <span className={styles.label}>{field.shortLabel}</span>
+            <span className={styles.label}>{field.fullLabel}</span>
             <span className={styles.value}>
               {item ? formatMeasurementValue(field.key, item.value) : "—"}
             </span>
-            <span className={styles.date}>
-              {item ? relativeDate(item.date) : "Sin datos"}
-            </span>
+            {item && (
+              <span className={styles.date}>{relativeDate(item.date)}</span>
+            )}
           </div>
         );
       })}

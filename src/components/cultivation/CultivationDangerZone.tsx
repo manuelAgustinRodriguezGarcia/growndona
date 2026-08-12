@@ -96,7 +96,7 @@ export function CultivationDangerZone({
         )}
         <Button variant="danger" full onClick={() => setDeleteConfirm(true)}>
           <Trash2 size={16} aria-hidden="true" />
-          Eliminar cultivo
+          Eliminar
         </Button>
       </div>
 
