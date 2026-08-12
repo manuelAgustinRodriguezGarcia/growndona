@@ -35,19 +35,16 @@
 }
 
 .highlight {
-  position: relative;
-
   span:first-child {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 46px;
-    height: 46px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: var(--green);
     color: #ffffff;
-    margin-top: -22px;
-    box-shadow: 0 4px 14px rgba(63, 143, 71, 0.35);
+    box-shadow: 0 2px 8px rgba(63, 143, 71, 0.3);
     transition: background 0.15s ease;
   }
 

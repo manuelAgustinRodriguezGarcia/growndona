@@ -1,31 +1,31 @@
-.dateRow {
+.section {
   display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.dateInput {
-  flex: 1;
-}
-
-.dayLabel {
-  flex-shrink: 0;
-  background: var(--green-soft);
-  color: var(--green-light);
-  font-weight: 700;
-  font-size: 14px;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  margin-top: 23px;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .paramsGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  width: 100%;
 
-  @media (min-width: 480px) {
-    grid-template-columns: repeat(3, 1fr);
+  > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  :global(label) {
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: normal;
+  }
+
+  :global(input) {
+    padding: 8px 6px;
+    min-height: 40px;
+    width: 100%;
+    text-align: center;
   }
 }
 

@@ -80,14 +80,20 @@ export function CultivationDangerZone({
 
   return (
     <>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isActive ? "1fr 1fr" : "1fr",
+          gap: 10,
+        }}
+      >
         {isActive && (
-          <Button variant="secondary" onClick={() => setFinishOpen(true)}>
+          <Button variant="secondary" full onClick={() => setFinishOpen(true)}>
             <Flag size={16} aria-hidden="true" />
             Finalizar cultivo
           </Button>
         )}
-        <Button variant="danger" onClick={() => setDeleteConfirm(true)}>
+        <Button variant="danger" full onClick={() => setDeleteConfirm(true)}>
           <Trash2 size={16} aria-hidden="true" />
           Eliminar cultivo
         </Button>

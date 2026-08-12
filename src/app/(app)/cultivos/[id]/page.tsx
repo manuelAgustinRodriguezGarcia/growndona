@@ -27,7 +27,7 @@ import { QuickActions } from "@/components/entries/QuickActions";
 import { MeasurementChart } from "@/components/charts/MeasurementChart";
 import { PhotoGrid, type GalleryPhoto } from "@/components/photos/PhotoGrid";
 import { ProblemCard } from "@/components/problems/ProblemCard";
-import { LinkTabs } from "@/components/ui/LinkTabs";
+import { CultivationSectionNav } from "@/components/cultivation/CultivationSectionNav";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import styles from "./cultivo.module.scss";
@@ -143,17 +143,56 @@ export default async function CultivationPage({ params, searchParams }: PageProp
 
       <CultivationHeader cultivation={cultivation} coverUrl={coverUrl} />
 
-      <LinkTabs
-        tabs={TABS.map((t) => ({
-          href: `/cultivos/${id}?tab=${t.key}`,
-          label: t.label,
-          active: t.key === tab,
-        }))}
-      />
+      <CultivationSectionNav cultivationId={id} active={tab} />
 
       <div className={styles.content}>
         {tab === "resumen" && (
           <>
+            <section className="card">
+              <div className={styles.topBar} style={{ marginBottom: 8 }}>
+                <h2 className="section-title" style={{ marginBottom: 0 }}>
+                  Períodos
+                </h2>
+                {isActive && (
+                  <PeriodManager
+                    cultivationId={id}
+                    currentPeriodLabel={activePeriod ? periodLabel(activePeriod) : null}
+                  />
+                )}
+              </div>
+              {periods.length === 0 ? (
+                <p className="text-muted" style={{ fontSize: 14 }}>
+                  Este cultivo todavía no tiene períodos.
+                </p>
+              ) : (
+                periods.map((period) => {
+                  const isOpen = !period.end_date;
+                  const duration = daysBetween(
+                    period.start_date,
+                    period.end_date ?? (isActive ? null : cultivation.end_date)
+                  );
+                  return (
+                    <div key={period.id} className={styles.periodRow}>
+                      <div>
+                        <p className={styles.periodName}>{periodLabel(period)}</p>
+                        <p className={styles.periodDates}>
+                          {formatShortDate(period.start_date)}
+                          {period.end_date
+                            ? ` → ${formatShortDate(period.end_date)}`
+                            : " → actual"}
+                        </p>
+                      </div>
+                      <span className={styles.periodDuration}>
+                        {isOpen && isActive
+                          ? `${duration} días · actual`
+                          : `${duration} días`}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </section>
+
             <section>
               <h2 className="section-title">Últimos parámetros</h2>
               <MeasurementGrid latest={latestPerField(series)} />

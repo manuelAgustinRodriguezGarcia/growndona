@@ -29,7 +29,7 @@ export function BottomNav() {
             aria-current={active ? "page" : undefined}
           >
             <span>
-              <Icon size={item.highlight ? 24 : 21} aria-hidden="true" />
+              <Icon size={21} aria-hidden="true" />
             </span>
             {item.shortLabel}
           </Link>

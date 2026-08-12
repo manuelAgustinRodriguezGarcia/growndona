@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getCultivation } from "@/lib/queries/cultivations";
 import { getEntryByDate } from "@/lib/queries/entries";
 import { getSignedUrlMap } from "@/lib/queries/photos";
-import { todayISO } from "@/lib/utils/dates";
+import { dayNumber, todayISO } from "@/lib/utils/dates";
 import { PageHeader } from "@/components/layout/PageHeader";
+import pageHeaderStyles from "@/components/layout/PageHeader.module.scss";
 import { DailyEntryForm } from "@/components/entries/DailyEntryForm";
 
 export const metadata: Metadata = { title: "Registrar día" };
@@ -41,6 +42,8 @@ export default async function RegisterDayPage({ params, searchParams }: PageProp
     })
     .filter((p): p is { id: string; url: string; storage_path: string } => p !== null);
 
+  const day = dayNumber(cultivation.start_date, date);
+
   return (
     <>
       <PageHeader
@@ -48,12 +51,12 @@ export default async function RegisterDayPage({ params, searchParams }: PageProp
         subtitle={cultivation.name}
         backHref={`/cultivos/${id}`}
         backLabel={cultivation.name}
+        action={<span className={pageHeaderStyles.dayBadge}>Día {day}</span>}
       />
       <DailyEntryForm
         key={date}
         cultivationId={id}
         userId={user.id}
-        startDate={cultivation.start_date}
         date={date}
         existing={existing}
         existingPhotos={existingPhotos}

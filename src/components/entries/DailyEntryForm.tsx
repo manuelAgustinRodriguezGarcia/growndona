@@ -2,7 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { Droplets, X } from "lucide-react";
+import {
+  BrushCleaning,
+  Cannabis,
+  Droplets,
+  Dumbbell,
+  Ellipsis,
+  Leaf,
+  RefreshCcw,
+  Shovel,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   replaceActions,
@@ -17,7 +28,7 @@ import {
   deletePhoto,
   uploadPhoto,
 } from "@/lib/queries/photos";
-import { dayNumber, todayISO } from "@/lib/utils/dates";
+import { todayISO } from "@/lib/utils/dates";
 import {
   ACTION_OPTIONS,
   MEASUREMENT_FIELDS,
@@ -26,6 +37,7 @@ import {
 } from "@/lib/utils/labels";
 import type { ActionType } from "@/types/database";
 import { Button } from "@/components/ui/Button";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { Input, Textarea } from "@/components/ui/Field";
 import { PhotoPicker } from "@/components/photos/PhotoPicker";
 import { useToast } from "@/components/ui/Toast";
@@ -41,7 +53,6 @@ type ExistingPhoto = {
 type DailyEntryFormProps = {
   cultivationId: string;
   userId: string;
-  startDate: string;
   date: string;
   existing: EntryDetails | null;
   existingPhotos: ExistingPhoto[];
@@ -51,8 +62,18 @@ const RANGES: Record<MeasurementKey, { min: number; max: number }> = {
   temperature: { min: -20, max: 70 },
   humidity: { min: 0, max: 100 },
   ph: { min: 0, max: 14 },
-  ec: { min: 0, max: 20 },
+  ec: { min: 0, max: 10000 },
   ppm: { min: 0, max: 10000 },
+};
+
+const ACTION_ICONS: Record<ActionType, LucideIcon> = {
+  pruning: Leaf,
+  defoliation: Cannabis,
+  transplant: Shovel,
+  training: Dumbbell,
+  solution_change: RefreshCcw,
+  cleaning: BrushCleaning,
+  other: Ellipsis,
 };
 
 function parseDecimal(raw: string): number | null | undefined {
@@ -66,7 +87,6 @@ function parseDecimal(raw: string): number | null | undefined {
 export function DailyEntryForm({
   cultivationId,
   userId,
-  startDate,
   date,
   existing,
   existingPhotos,
@@ -106,7 +126,6 @@ export function DailyEntryForm({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const day = dayNumber(startDate, date);
   const visiblePhotos = existingPhotos.filter(
     (p) => !removedPhotoIds.includes(p.id)
   );
@@ -199,20 +218,15 @@ export function DailyEntryForm({
 
   return (
     <form className={formStyles.form} onSubmit={handleSubmit}>
-      <div className={formStyles.block}>
-        <div className={styles.dateRow}>
-          <div className={styles.dateInput}>
-            <Input
-              label="Fecha del registro"
-              type="date"
-              value={date}
-              max={todayISO()}
-              onChange={(e) => handleDateChange(e.target.value)}
-              required
-            />
-          </div>
-          <span className={styles.dayLabel}>Día {day}</span>
-        </div>
+      <div className={styles.section}>
+        <span className={formStyles.blockTitle}>Fecha del registro</span>
+        <DatePicker
+          aria-label="Fecha del registro"
+          value={date}
+          max={todayISO()}
+          onChange={handleDateChange}
+          required
+        />
         {existing && (
           <p className="text-muted" style={{ fontSize: 13 }}>
             Ya existe un registro para este día. Estás editándolo.
@@ -226,13 +240,13 @@ export function DailyEntryForm({
         </p>
       )}
 
-      <div className={formStyles.block}>
+      <div className={styles.section}>
         <span className={formStyles.blockTitle}>Parámetros</span>
         <div className={styles.paramsGrid}>
           {MEASUREMENT_FIELDS.map((field) => (
             <Input
               key={field.key}
-              label={field.unit ? `${field.label} (${field.unit})` : field.label}
+              label={field.shortLabel}
               inputMode="decimal"
               placeholder="—"
               value={values[field.key]}
@@ -244,7 +258,7 @@ export function DailyEntryForm({
         </div>
       </div>
 
-      <div className={formStyles.block}>
+      <div className={styles.section}>
         <span className={formStyles.blockTitle}>Acciones del día</span>
         <div className={styles.actionsGrid}>
           <button
@@ -258,6 +272,7 @@ export function DailyEntryForm({
           </button>
           {ACTION_OPTIONS.map((option) => {
             const selected = selectedActions.includes(option.value);
+            const Icon = ACTION_ICONS[option.value];
             return (
               <button
                 key={option.value}
@@ -266,6 +281,7 @@ export function DailyEntryForm({
                 onClick={() => toggleAction(option.value)}
                 aria-pressed={selected}
               >
+                <Icon size={18} aria-hidden="true" />
                 {option.label}
               </button>
             );
@@ -297,7 +313,7 @@ export function DailyEntryForm({
         )}
       </div>
 
-      <div className={formStyles.block}>
+      <div className={styles.section}>
         <span className={formStyles.blockTitle}>Fotos</span>
         {visiblePhotos.length > 0 && (
           <div className={styles.existingPhotos}>
@@ -322,10 +338,10 @@ export function DailyEntryForm({
         <PhotoPicker files={newFiles} onChange={setNewFiles} disabled={saving} />
       </div>
 
-      <div className={formStyles.block}>
-        <span className={formStyles.blockTitle}>Notas</span>
+      <div className={styles.section}>
+        <span className={formStyles.blockTitle}>Notas del día</span>
         <Textarea
-          label="Notas del día"
+          aria-label="Notas del día"
           placeholder="¿Qué pasó hoy en el cultivo?"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}

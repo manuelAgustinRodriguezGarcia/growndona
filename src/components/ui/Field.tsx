@@ -8,7 +8,7 @@ import type {
 import styles from "./Field.module.scss";
 
 type FieldWrapperProps = {
-  label: string;
+  label?: string;
   required?: boolean;
   error?: string;
   hint?: string;
@@ -26,14 +26,16 @@ function FieldWrapper({
 }: FieldWrapperProps) {
   return (
     <div className={styles.field}>
-      <label className={styles.label} htmlFor={htmlFor}>
-        {label}
-        {required && (
-          <span className={styles.required} aria-hidden="true">
-            *
-          </span>
-        )}
-      </label>
+      {label && (
+        <label className={styles.label} htmlFor={htmlFor}>
+          {label}
+          {required && (
+            <span className={styles.required} aria-hidden="true">
+              *
+            </span>
+          )}
+        </label>
+      )}
       {children}
       {error && <span className={styles.errorText}>{error}</span>}
       {!error && hint && <span className={styles.hint}>{hint}</span>}
@@ -107,7 +109,7 @@ export function Select({
 }
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
-  label: string;
+  label?: string;
   error?: string;
   hint?: string;
 };

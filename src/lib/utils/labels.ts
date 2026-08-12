@@ -70,14 +70,15 @@ export type MeasurementKey = "temperature" | "humidity" | "ph" | "ec" | "ppm";
 export const MEASUREMENT_FIELDS: {
   key: MeasurementKey;
   label: string;
+  shortLabel: string;
   unit: string;
   decimals: number;
 }[] = [
-  { key: "temperature", label: "Temperatura", unit: "°C", decimals: 1 },
-  { key: "humidity", label: "Humedad", unit: "%", decimals: 0 },
-  { key: "ph", label: "pH", unit: "", decimals: 1 },
-  { key: "ec", label: "EC", unit: "", decimals: 2 },
-  { key: "ppm", label: "PPM", unit: "", decimals: 0 },
+  { key: "temperature", label: "Temperatura", shortLabel: "Temp. (°C)", unit: "°C", decimals: 1 },
+  { key: "humidity", label: "Humedad", shortLabel: "Hum. (%)", unit: "%", decimals: 0 },
+  { key: "ph", label: "pH", shortLabel: "pH", unit: "", decimals: 1 },
+  { key: "ec", label: "EC", shortLabel: "EC (µS/cm)", unit: "µS/cm", decimals: 0 },
+  { key: "ppm", label: "PPM", shortLabel: "PPM", unit: "", decimals: 0 },
 ];
 
 export function formatMeasurement(
