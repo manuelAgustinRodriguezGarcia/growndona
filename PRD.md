@@ -1,12 +1,91 @@
 # PRD — Growndona
 
-**Versión:** 1.0
-**Estado:** Definición inicial
-**Plataforma:** Aplicación web responsive
-**Stack definido:** Next.js + Supabase
+**Versión:** 1.1
+**Estado:** Núcleo del MVP implementado
+**Última actualización:** 18/08/2026
+**Plataforma:** Aplicación web responsive (mobile-first) + PWA
+**Stack:** Next.js (App Router) + React + TypeScript + Supabase (Auth, PostgreSQL, Storage)
 **Enfoque inicial:** MVP funcional
 **IA:** Fuera del alcance
-**Monetización:** Fuera del MVP
+**Pagos:** Aún no implementados (la landing ya comunica pago único)
+
+---
+
+## Estado del producto
+
+El PRD original (v1.0) definió el producto. Desde entonces se construyó la primera versión de Growndona: autenticación, cultivos, registros diarios, timeline, gráficos, galería, problemas, perfil e historial. El modelo también creció respecto al documento inicial: hay plantas individuales, parámetros por genética, usuario con username, landing pública y manifiesto PWA.
+
+El cierre de la v1.0 decía que el próximo paso era bajar esto a arquitectura, modelo de datos y pantallas. **Eso ya está hecho.** El siguiente trabajo es cerrar huecos del PRD original, alinear la landing con lo que realmente se cobra, y recién después abrir la segunda etapa.
+
+### Ya implementado (núcleo del MVP)
+
+* Registro, inicio de sesión, cierre de sesión y recuperación de contraseña (Supabase Auth). Login también por username.
+* Perfil: nombre, avatar, username, fecha de registro y estadísticas (cultivos activos/finalizados, registros, fotos, días cultivados).
+* Crear, editar y finalizar cultivos (con nota final y gramos de cosecha / peso final).
+* Períodos del cultivo (germinación, plántula, crecimiento, floración, secado, finalizado y personalizado) con duración calculada.
+* Contador automático de día del cultivo y día del período.
+* Registro diario con campos opcionales: parámetros, riego, acciones, fotos y notas.
+* Parámetros: temperatura, humedad, pH, EC en µS/cm (rango 0–10000) y PPM. En cultivos con varias genéticas se registran y grafican por genética.
+* Fotos en registros diarios y en problemas, almacenadas en Supabase Storage (bucket privado, signed URLs).
+* Galería del cultivo ordenada por día.
+* Riegos (desde el formulario diario y como acción rápida).
+* Podas y acciones: poda, defoliación, trasplante, entrenamiento, cambio de solución, limpieza, otra.
+* Problemas con estado activo/resuelto, descripción, solución, fechas y fotos.
+* Timeline del cultivo y pantalla de historial reciente entre todos los cultivos.
+* Dashboard de inicio con cultivo activo, últimos parámetros, actividad y acciones rápidas.
+* Listado de cultivos activos y finalizados.
+* Gráficos de parámetros (pH, EC, PPM, temperatura, humedad) con selector por genética cuando aplica.
+* Vista individual del cultivo con secciones: Resumen, Timeline, Parámetros, Galería, Problemas, Información.
+* Navegación mobile (BottomNav + TopNav de marca) y sidebar en desktop.
+* Landing pública (funciones, cómo funciona, precio de pago único USD 42, CTA a registro).
+* PWA básica (manifest + botón de instalación en login).
+
+### Agregado respecto al PRD original
+
+Estas piezas no estaban en el alcance v1.0 y ya existen en el producto:
+
+| Cambio | Qué implica |
+| --- | --- |
+| Plantas individuales | Cada cultivo tiene filas en `plants` (número, genética, método, ambiente, medio, descripción), no solo un `plant_count`. |
+| Parámetros por genética | `cultivation_genetics` + varias mediciones por día (`measurements.genetic_id`). |
+| Username | Perfil y login por usuario; unique e indexado. |
+| Gramos al finalizar | `harvest_grams` y `final_grams` en el cultivo. |
+| EC en µS/cm | Escala 0–10000, no 0–20 mS/cm. El formulario diario muestra los 5 parámetros en una fila compacta. |
+| Landing + precio | Página de marketing con pago único; **el cobro todavía no está cableado**. |
+| PWA | Instalable desde el navegador; falta pulir iconos/tema. |
+
+### Todavía no implementado (del PRD original)
+
+* Vista calendario del cultivo (sección 23).
+* Fotos asociadas a una acción concreta (hoy las fotos viven en el registro diario, no en `actions`).
+* Hora editable del riego (el schema tiene `performed_at`; la UI usa el momento actual).
+* Pestaña o listado dedicado de riegos (el acceso es por timeline / registro diario).
+* Pagos, prueba con vencimiento y control de acceso de por vida (la landing los anuncia).
+* Funciones sociales, comparación entre cultivos, recordatorios, nutrientes y riego avanzado (segunda etapa).
+
+### Próximos pasos
+
+Orden sugerido para no reabrir el alcance de golpe:
+
+1. **Cerrar huecos del PRD original que todavía aportan al diario de cultivo**
+   * Vista calendario del cultivo: días con actividad y acceso al registro al tocar un día.
+   * Hora opcional en riegos, si se quiere cumplir el dato mínimo del PRD.
+   * Fotos opcionales por acción, o confirmar que las fotos del día alcanzan y sacar ese requisito.
+2. **Alinear monetización con la landing**
+   * Decidir si el MVP se lanza gratis, con prueba abierta, o con pago único.
+   * Si se cobra: implementar checkout, marcar acceso de por vida y dejar de redirigir el CTA de “prueba gratuita” a un registro sin límite.
+   * Si no se cobra todavía: bajar o ocultar el bloque de precio hasta que exista el flujo.
+3. **Pulido PWA y mobile**
+   * Iconos del manifest en tamaños correctos, `theme_color` alineado a la marca, y comportamiento standalone estable.
+4. **Segunda etapa (después de validar el núcleo)**
+   * Registro avanzado de riegos (cantidad, pH/EC del agua, nutrientes).
+   * Recordatorios.
+   * Comparación entre cultivos y entre fotos del mismo día de ciclo.
+   * Exportación del cultivo.
+   * Privacidad (privado / amigos / público) y funciones sociales.
+   * Seguimiento diario por planta (hoy las plantas existen, pero el registro diario es por cultivo/genética).
+
+IA, sensores, IoT, marketplace y gamificación siguen **fuera de alcance**.
 
 ---
 
@@ -98,25 +177,30 @@ Cada usuario solamente podrá modificar sus propios cultivos.
 
 # 5. Estructura principal
 
-La estructura general será:
+La estructura general es:
 
 ```text
 Usuario
  └── Cultivos
+      ├── Plantas
+      ├── Genéticas del cultivo
       ├── Períodos
       ├── Registros diarios
-      │    ├── Parámetros
+      │    ├── Parámetros (generales o por genética)
       │    ├── Fotos
       │    ├── Riegos
       │    ├── Acciones
       │    └── Notas
       │
       └── Problemas
+           └── Fotos
 ```
 
 Un usuario puede tener varios cultivos.
 
-Cada cultivo tendrá su propio historial independiente.
+Cada cultivo tiene su propio historial independiente.
+
+**Estado:** esta estructura ya está modelada en Supabase y usada por la app. El seguimiento diario sigue siendo por cultivo (y por genética cuando hay más de una), no por planta individual.
 
 ---
 
@@ -130,9 +214,9 @@ Como mínimo:
 
 * Nombre del cultivo.
 * Fecha de inicio.
-* Cantidad de plantas.
+* Cantidad de plantas (se materializa en filas de `plants`).
 
-Opcionalmente:
+Opcionalmente, a nivel cultivo o por planta:
 
 * Variedad/genética.
 * Método de cultivo.
@@ -140,6 +224,8 @@ Opcionalmente:
 * Cultivo interior/exterior.
 * Descripción.
 * Foto principal.
+
+Al crear o editar un cultivo el usuario puede indicar si las plantas comparten genética, método, ambos, o son independientes.
 
 Ejemplo:
 
@@ -163,8 +249,9 @@ Al finalizar un cultivo se solicitará:
 
 * Fecha de finalización.
 * Nota final opcional.
+* Gramos de cosecha / peso final (opcional).
 
-Los cultivos finalizados seguirán disponibles para consulta.
+Los cultivos finalizados siguen disponibles para consulta.
 
 No deberán desaparecer del historial.
 
@@ -183,7 +270,9 @@ Inicialmente:
 * Secado.
 * Finalizado.
 
-El usuario podrá indicar cuándo comienza un nuevo período.
+El usuario indica cuándo comienza un nuevo período. También existe el tipo **personalizado**.
+
+**Estado:** implementado, con cálculo automático de duración por etapa.
 
 Ejemplo:
 
@@ -247,10 +336,10 @@ Por ejemplo, un día el usuario puede cargar solamente una foto y otro día par�
 
 Dentro de una entrada se podrán registrar:
 
-* Temperatura.
-* Humedad.
+* Temperatura (°C).
+* Humedad (%).
 * pH.
-* EC.
+* EC (µS/cm, 0–10000).
 * PPM.
 
 Ejemplo:
@@ -259,13 +348,17 @@ Ejemplo:
 Temperatura: 24 °C
 Humedad: 61 %
 pH: 5.9
-EC: 1.2
+EC: 534 µS/cm
 PPM: 620
 ```
 
-Los campos serán opcionales.
+Los campos son opcionales.
 
-No será necesario completar todos los parámetros para guardar una entrada.
+No es necesario completar todos los parámetros para guardar una entrada.
+
+Si el cultivo tiene más de una genética, el formulario permite cargar un set de parámetros por genética.
+
+**Estado:** implementado, con fila compacta de inputs en el registro diario.
 
 ---
 
@@ -294,7 +387,9 @@ Foto 2
 Foto 3
 ```
 
-Las imágenes se almacenarán utilizando **Supabase Storage**.
+Las imágenes se almacenan en **Supabase Storage** (bucket privado `cultivation-photos`, URLs firmadas).
+
+**Estado:** implementado para registros diarios, problemas, portada del cultivo y avatar. Pendiente: fotos ligadas a una acción específica.
 
 ---
 
@@ -320,7 +415,9 @@ Día 15
 [foto]
 ```
 
-Esto permitirá visualizar fácilmente la evolución de las plantas.
+Esto permite visualizar fácilmente la evolución de las plantas.
+
+**Estado:** implementado como pestaña Galería del cultivo.
 
 ---
 
@@ -343,6 +440,8 @@ En versiones posteriores podría ampliarse con:
 
 Para el MVP no es necesario hacer complejo este registro.
 
+**Estado:** el riego del día se registra (formulario diario y acción rápida). La hora no es editable en la UI. Cantidad, pH del agua, EC y nutrientes siguen fuera del MVP.
+
 ---
 
 # 15. Podas y acciones
@@ -364,7 +463,7 @@ Cada acción tendrá:
 * Tipo.
 * Fecha.
 * Nota opcional.
-* Fotografías opcionales.
+* Fotografías opcionales (pendiente: hoy las fotos son del registro diario, no de la acción).
 
 Ejemplo:
 
@@ -541,6 +640,8 @@ PPM             590
 
 El dashboard debe ser visual y fácil de leer, evitando convertirlo en una pantalla llena de texto.
 
+**Estado:** implementado, con selector si hay más de un cultivo activo y gráficos de parámetros.
+
 ---
 
 # 20. Mis cultivos
@@ -589,10 +690,13 @@ Y accesos a:
 
 * Timeline.
 * Parámetros.
-* Fotos.
-* Riegos.
+* Galería.
 * Problemas.
-* Información del cultivo.
+* Información del cultivo (plantas, datos del cultivo, finalizar/eliminar).
+
+Los riegos no tienen pestaña propia: aparecen en el registro diario, las acciones rápidas y el timeline.
+
+**Estado:** implementado con navegación por secciones en la ficha del cultivo.
 
 ---
 
@@ -654,6 +758,8 @@ Por ejemplo:
 
 Al seleccionar un día se abrirá su registro.
 
+**Estado:** no implementado. El DatePicker existe para formularios, pero no hay vista calendario del cultivo. Es el hueco más visible del PRD original dentro del diario de cultivo.
+
 ---
 
 # 24. Perfil
@@ -673,6 +779,8 @@ También podrá mostrar estadísticas como:
 * Total de registros.
 * Total de fotos.
 * Días cultivados.
+
+**Estado:** implementado, incluyendo username y edición de nombre/avatar.
 
 ---
 
@@ -700,7 +808,9 @@ Actividad reciente.
 
 Información y configuración del usuario.
 
-En mobile, **Registrar** puede funcionar como acción principal destacada.
+En mobile, **Registrar** funciona como acción principal destacada (BottomNav). Encima hay una barra de marca (TopNav) solo en mobile.
+
+**Estado:** implementado. Rutas: `/dashboard`, `/cultivos`, `/registrar`, `/historial`, `/perfil`.
 
 ---
 
@@ -764,24 +874,29 @@ Supabase Auth manejará:
 * Cierre de sesión.
 * Recuperación de contraseña.
 
-Cada usuario tendrá acceso exclusivamente a sus propios datos privados.
+Cada usuario tiene acceso exclusivamente a sus propios datos privados (RLS en todas las tablas).
+
+**Estado:** implementado, incluyendo confirmación de email y recuperación de contraseña.
 
 ---
 
-# 28. Base de datos inicial
+# 28. Base de datos
 
-Sin definir todavía cada columna exacta, las entidades principales serían:
+Entidades actuales (migrations `0001`–`0007`):
 
 ```text
 profiles
 cultivations
+plants
+cultivation_genetics
 cultivation_periods
 daily_entries
-measurements
+measurements          (una fila por genética por día; genetic_id nullable)
 actions
 irrigations
+photos                (del registro diario)
 problems
-photos
+problem_photos
 ```
 
 Relación general:
@@ -790,19 +905,21 @@ Relación general:
 profiles
    ↓
 cultivations
+   ├── plants
+   ├── cultivation_genetics
+   ├── cultivation_periods
+   ├── problems → problem_photos
    ↓
 daily_entries
-   ├── measurements
+   ├── measurements → cultivation_genetics
    ├── actions
    ├── irrigations
    └── photos
-
-cultivations
-   ├── cultivation_periods
-   └── problems
 ```
 
-Esto mantiene una estructura suficientemente clara sin complicar demasiado la aplicación.
+Storage: bucket privado `cultivation-photos`.
+
+Los días del cultivo (`Día X`) se calculan a partir de `start_date`; no se persisten.
 
 ---
 
@@ -827,33 +944,35 @@ Desktop tendrá una versión más amplia del mismo sistema.
 
 # 30. MVP
 
-Para evitar hacer una aplicación enorme desde el comienzo, el **MVP de Growndona** incluirá:
+Para evitar hacer una aplicación enorme desde el comienzo, el **MVP de Growndona** incluye:
 
-1. Registro e inicio de sesión.
-2. Perfil básico.
-3. Crear cultivo.
-4. Editar cultivo.
-5. Finalizar cultivo.
-6. Períodos del cultivo.
-7. Contador de días.
-8. Registro diario.
-9. Temperatura.
-10. Humedad.
-11. pH.
-12. EC.
-13. PPM.
-14. Fotos.
-15. Notas.
-16. Riegos.
-17. Podas/acciones.
-18. Registro de problemas.
-19. Timeline.
-20. Galería.
-21. Dashboard del cultivo.
-22. Listado de cultivos activos/finalizados.
-23. Gráficos básicos de parámetros.
+| # | Funcionalidad | Estado |
+| --- | --- | --- |
+| 1 | Registro e inicio de sesión | Hecho |
+| 2 | Perfil básico | Hecho |
+| 3 | Crear cultivo | Hecho |
+| 4 | Editar cultivo | Hecho |
+| 5 | Finalizar cultivo | Hecho |
+| 6 | Períodos del cultivo | Hecho |
+| 7 | Contador de días | Hecho |
+| 8 | Registro diario | Hecho |
+| 9 | Temperatura | Hecho |
+| 10 | Humedad | Hecho |
+| 11 | pH | Hecho |
+| 12 | EC (µS/cm) | Hecho |
+| 13 | PPM | Hecho |
+| 14 | Fotos | Hecho |
+| 15 | Notas | Hecho |
+| 16 | Riegos | Hecho (mínimo) |
+| 17 | Podas/acciones | Hecho (sin foto propia) |
+| 18 | Registro de problemas | Hecho |
+| 19 | Timeline | Hecho |
+| 20 | Galería | Hecho |
+| 21 | Dashboard del cultivo | Hecho |
+| 22 | Listado de cultivos activos/finalizados | Hecho |
+| 23 | Gráficos básicos de parámetros | Hecho |
 
-Con esto **ya tenemos un producto funcional y con una finalidad clara**.
+Con esto **el núcleo del producto ya es funcional**. El calendario del cultivo (sección 23) no estaba en esta lista y sigue pendiente.
 
 ---
 
@@ -865,9 +984,8 @@ No deberíamos meter estas funcionalidades ahora:
 * Chatbot.
 * Reconocimiento de problemas mediante fotografías.
 * Marketplace.
-* Suscripciones.
-* Plan Pro.
-* Pagos.
+* Suscripciones / Plan Pro (la landing actual habla de **pago único**, no de suscripción).
+* Pagos (flujo todavía no construido).
 * Integraciones con sensores.
 * Automatización de dispositivos.
 * Controladores IoT.
@@ -913,17 +1031,17 @@ pero no debería distraernos del MVP.
 
 # 33. Segunda etapa
 
-Después del MVP se podrían desarrollar:
+Después de cerrar los huecos del MVP y definir monetización:
 
 * Comparación entre cultivos.
 * Comparación de fotografías.
 * Estadísticas históricas.
-* Calendario avanzado.
+* Calendario (primero el del PRD original; luego uno avanzado).
 * Recordatorios.
 * Más tipos de acciones.
 * Nutrientes.
 * Registro avanzado de riegos.
-* Seguimiento individual por planta.
+* Seguimiento diario individual por planta (las plantas ya existen como entidad).
 * Timelapse.
 * Exportación del cultivo.
 * Perfiles públicos.
@@ -1077,4 +1195,4 @@ El núcleo estará compuesto por:
 
 Sobre esa estructura después podremos construir gráficos, estadísticas, comparaciones y funciones sociales sin tener que rediseñar conceptualmente la aplicación.
 
-Este PRD ya está suficientemente definido como para que el próximo paso sea **bajar esto a arquitectura de pantallas, modelo de datos de Supabase y funcionalidades exactas por página**. Después de eso sí tendría sentido construir el **one-shot prompt completo para generar la primera versión de Growndona**.
+La arquitectura de pantallas, el modelo de Supabase y las funcionalidades por página **ya existen**. El próximo trabajo concreto está en **Estado del producto → Próximos pasos**: calendario, decisión de pagos vs landing, pulido PWA, y recién después la segunda etapa.
